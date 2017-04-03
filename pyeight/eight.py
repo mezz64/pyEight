@@ -8,11 +8,12 @@ Licensed under the MIT license.
 """
 
 import logging
-import json
+#import json
 import asyncio
 import aiohttp
 import async_timeout
 
+from pyeight.user import EightUser
 from pyeight.constants import (
     DEFAULT_TIMEOUT, DEFAULT_HEADERS, API_URL)
 
@@ -34,22 +35,24 @@ Some general project notes that don't fit anywhere else:
 
 class EightSleep(object):
     """Eight sleep API object."""
-    def __init__(
-            self, email, password, partner=False, api_key=None, loop=None):
+    def __init__(self, email, password, tzone, partner=False, api_key=None,
+                 loop=None):
         """Initialize eight sleep class."""
         self._email = email
         self._password = password
         self._partner = partner
         self._api_key = api_key
 
-        self._userids = {}
+        self.tzone = tzone
+
+        self.users = {}
+
+        self._userid = None
         self._token = None
         self._expdate = None
         self._devices = None
 
-        self._heating_json = None
-        self._trends_json = {}
-        self._intervals_json = {}
+        self._device_json = None
 
         if loop is None:
             _LOGGER.info("Creating our own event loop.")
@@ -79,14 +82,14 @@ class EightSleep(object):
         return self._userids
 
     @property
-    def device_list(self):
-        """Return list of devices."""
-        return self._devices
+    def deviceid(self):
+        """Return devices id."""
+        return self._devices[0]
 
     @property
-    def heating_raw(self):
-        """Return raw heating json."""
-        return self._heating_json
+    def device_data(self):
+        """Return raw device_data json."""
+        return self._device_json
 
     def initialize(self):
         """Initialize api connection."""
@@ -97,6 +100,14 @@ class EightSleep(object):
             self._event_loop.run_forever()
             self._event_loop.close()
             _LOGGER.info("Connection shut down.")
+
+    @asyncio.coroutine
+    def update(self):
+        """Update data for all users/devices."""
+        yield from self.update_device_data()
+
+        for user in self.users:
+            yield from self.users[user].update_user()
 
     @asyncio.coroutine
     def start(self):
@@ -118,7 +129,7 @@ class EightSleep(object):
         else:
             _LOGGER.debug('Token Result: %s', reg)
             # Assume left side for now, we will update later
-            self._userids['Left'] = reg['session']['userId']
+            self._userid = reg['session']['userId']
             self._token = reg['session']['token']
             self._expdate = reg['session']['expirationDate']
 
@@ -138,56 +149,33 @@ class EightSleep(object):
     @asyncio.coroutine
     def assign_users(self):
         """Update device properties."""
-        for device in self._devices:
-            url = '{}/devices/{}?filter=ownerId,leftUserId,rightUserId' \
-                .format(API_URL, device)
+        device = self._devices[0]
+        url = '{}/devices/{}?filter=ownerId,leftUserId,rightUserId' \
+            .format(API_URL, device)
 
-            data = yield from self.api_get(url)
-            if data is None:
-                # self._registered = False
-                _LOGGER.error('Unable to assign eight device users.')
-            else:
-                _LOGGER.debug('%s Device data: %s', device, data)
-                if data['result']['leftUserId'] == self._userids['Left']:
-                    # We guessed correctly, populate partner if needed.
-                    if self._partner:
-                        self._userids['Right'] = data['result']['rightUserId']
-                elif data['result']['rightUserId'] == self._userids['Left']:
-                    # We guessed wrong, update both as needed.
-                    self._userids['Right'] = data['result']['rightUserId']
-                    if self._partner:
-                        self._userids['Left'] = data['result']['leftUserId']
-                    else:
-                        self._userids['Left'] = None
+        data = yield from self.api_get(url)
+        if data is None:
+            _LOGGER.error('Unable to assign eight device users.')
+        else:
+            _LOGGER.debug('%s Device data: %s', device, data)
+
+            self.users[data['result']['leftUserId']] = \
+                EightUser(self, data['result']['leftUserId'], 'Left')
+            if self._partner:
+                self.users[data['result']['rightUserId']] = \
+                    EightUser(self, data['result']['rightUserId'], 'Right')
 
     @asyncio.coroutine
-    def update_heating_data(self, device):
-        """Update heating data json."""
-        url = '{}/devices/{}?offlineView=true'.format(API_URL, device)
+    def update_device_data(self):
+        """Update device data json."""
+        url = '{}/devices/{}?offlineView=true'.format(API_URL, self.deviceid)
 
-        heating = yield from self.api_get(url)
-        if heating is None:
-            _LOGGER.error('Unable to fetch eight heating data.')
+        device_resp = yield from self.api_get(url)
+        if device_resp is None:
+            _LOGGER.error('Unable to fetch eight device data.')
         else:
-            _LOGGER.debug('Heating Result: %s', heating)
-            self._heating_json = heating['result']
-
-    @asyncio.coroutine
-    def update_trend_data(self, userid, tz, startdate, enddate):
-        """Update trends data json for specified time period."""
-        url = '{}/users/{}/trends'.format(API_URL, userid)
-        params = {
-            'tz': tz,
-            'from': startdate,
-            'to': enddate
-            }
-
-        trends = yield from self.api_get(url, params)
-        if trends is None:
-            _LOGGER.error('Unable to fetch eight trend data.')
-        else:
-            _LOGGER.debug('Trend Result: %s', trends)
-            self._trends_json[userid] = trends
+            _LOGGER.debug('Device Result: %s', device_resp)
+            self._device_json = device_resp['result']
 
     @asyncio.coroutine
     def api_post(self, url, params=None, data=None):
@@ -228,6 +216,7 @@ class EightSleep(object):
             with async_timeout.timeout(DEFAULT_TIMEOUT, loop=self._event_loop):
                 request = yield from self._api_session.get(
                     url, headers=headers, params=params)
+            # _LOGGER.debug('Get URL: %s', request.url)
             if request.status != 200:
                 _LOGGER.error('Error fetching Eight data: %s', request.status)
                 return None
@@ -249,7 +238,7 @@ class EightSleep(object):
                 yield from request.release()
 
     @asyncio.coroutine
-    def api_put(self, url, params=None, data=None):
+    def api_put(self, url, data=None):
         """Make api post request."""
         put = None
         headers = DEFAULT_HEADERS.copy()
@@ -258,7 +247,7 @@ class EightSleep(object):
         try:
             with async_timeout.timeout(DEFAULT_TIMEOUT, loop=self._event_loop):
                 put = yield from self._api_session.put(
-                    url, headers=headers, params=params, data=data)
+                    url, headers=headers, data=data)
             if put.status != 200:
                 _LOGGER.error('Error putting Eight data: %s', put.status)
                 return None
