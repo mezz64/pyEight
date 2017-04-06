@@ -127,7 +127,7 @@ class EightSleep(object):
             # self._registered = False
             _LOGGER.error('Unable to fetch eight token.')
         else:
-            _LOGGER.debug('Token Result: %s', reg)
+            # _LOGGER.debug('Token Result: %s', reg)
             # Assume left side for now, we will update later
             self._userid = reg['session']['userId']
             self._token = reg['session']['token']
@@ -143,7 +143,7 @@ class EightSleep(object):
             # self._registered = False
             _LOGGER.error('Unable to fetch eight devices.')
         else:
-            _LOGGER.debug('Device Result: %s', dlist)
+            # _LOGGER.debug('Device Result: %s', dlist)
             self._devices = dlist['user']['devices']
 
     @asyncio.coroutine
@@ -157,7 +157,7 @@ class EightSleep(object):
         if data is None:
             _LOGGER.error('Unable to assign eight device users.')
         else:
-            _LOGGER.debug('%s Device data: %s', device, data)
+            # _LOGGER.debug('%s Device data: %s', device, data)
 
             self.users[data['result']['leftUserId']] = \
                 EightUser(self, data['result']['leftUserId'], 'Left')
@@ -174,7 +174,7 @@ class EightSleep(object):
         if device_resp is None:
             _LOGGER.error('Unable to fetch eight device data.')
         else:
-            _LOGGER.debug('Device Result: %s', device_resp)
+            # _LOGGER.debug('Device Result: %s', device_resp)
             self._device_json = device_resp['result']
 
     @asyncio.coroutine

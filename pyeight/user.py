@@ -20,9 +20,9 @@ _LOGGER = logging.getLogger(__name__)
 Best way to structure this is to work to one HASS sensor for sleep data
 and one for bed data for each side of the bed (if applicable).
 
-Sleep data sensor
+Last Sleep Session sensor
 _________________________________________
-State will be the most recent sleep score.
+State will be the sleep score.
 Attributes will be:
     Duration of awake, light, deep sleep
     Number of tosses and turns
@@ -31,7 +31,6 @@ Attributes will be:
     Average respiritory rate
     Average heart rate
     Time spent heating
-    Processing (true/false)
 
 * These values are very dynamic during sleep so may only be useful
   when the "incomplete" parameter isn't present
@@ -60,9 +59,14 @@ class EightUser(object):
         self.intervals = None
         self.data = device.device_data
 
-    def latest_sleepscore(self):
-        """Return latest sleepscore."""
-        pass
+        # Variables to do dynamic presence
+        self.past_heating_level = None
+        self.presence = False
+
+    @property
+    def bed_presence(self):
+        """Return true/false for bed presence."""
+        return self.presence
 
     @property
     def target_heating_level(self):
@@ -99,6 +103,34 @@ class EightUser(object):
         elif self.side == 'Right':
             timerem = self.device.device_data['rightHeatingDuration']
         return timerem
+
+    @property
+    def heating_values(self):
+        """Return a dict of all the current heating values."""
+        heating_dict = {
+            'level': self.heating_level,
+            'target': self.target_heating_level,
+            'active': self.now_heating,
+            'remaining': self.heating_remaining,
+        }
+        return heating_dict
+
+    @property
+    def current_session_date(self):
+        """Return date/time for start of last session data."""
+        try:
+            incomplete = self.intervals[0]['incomplete']
+            if incomplete is True:
+                date = self.intervals[0]['ts']
+                date_f = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ')
+                now = time.time()
+                offset = datetime.fromtimestamp(now) \
+                    - datetime.utcfromtimestamp(now)
+                date = date_f + offset
+        except KeyError:
+            # No active sessions, top result is last complete session.
+            date = None
+        return date
 
     @property
     def current_sleep_stage(self):
@@ -216,6 +248,21 @@ class EightUser(object):
         return rate
 
     @property
+    def current_values(self):
+        """Return a dict of all the 'current' parameters."""
+        current_dict = {
+            'date': self.current_session_date,
+            'score': self.current_sleep_score,
+            'breakdown': self.current_sleep_breakdown,
+            'tnt': self.current_tnt,
+            'bed_temp': self.current_bed_temp,
+            'room_temp': self.current_room_temp,
+            'resp_rate': self.current_resp_rate,
+            'heart_rate': self.current_heart_rate,
+        }
+        return current_dict
+
+    @property
     def last_session_date(self):
         """Return date/time for start of last session data."""
         try:
@@ -264,15 +311,131 @@ class EightUser(object):
                 breakdown['deep'] += stage['duration']
         return breakdown
 
+    @property
+    def last_bed_temp(self):
+        """Return avg bed temperature for last session."""
+        try:
+            incomplete = self.intervals[0]['incomplete']
+            if incomplete is True:
+                bedtemps = self.intervals[1]['timeseries']['tempBedC']
+        except KeyError:
+            # No active sessions, top result is last complete session.
+            bedtemps = self.intervals[0]['timeseries']['tempBedC']
+        tmp = 0
+        num_temps = len(bedtemps)
+        for temp in bedtemps:
+            tmp += temp[1]
+        bedtemp = tmp/num_temps
+        return bedtemp
+
+    @property
+    def last_room_temp(self):
+        """Return avg room temperature for last session."""
+        try:
+            incomplete = self.intervals[0]['incomplete']
+            if incomplete is True:
+                rmtemps = self.intervals[1]['timeseries']['tempRoomC']
+        except KeyError:
+            # No active sessions, top result is last complete session.
+            rmtemps = self.intervals[0]['timeseries']['tempRoomC']
+        tmp = 0
+        num_temps = len(rmtemps)
+        for temp in rmtemps:
+            tmp += temp[1]
+        rmtemp = tmp/num_temps
+        return rmtemp
+
+    @property
+    def last_tnt(self):
+        """Return toss & turns for last session."""
+        try:
+            incomplete = self.intervals[0]['incomplete']
+            if incomplete is True:
+                tnt = len(self.intervals[1]['timeseries']['tnt'])
+        except KeyError:
+            # No active sessions, top result is last complete session.
+            tnt = len(self.intervals[0]['timeseries']['tnt'])
+        return tnt
+
+    @property
+    def last_resp_rate(self):
+        """Return avg respiratory rate for last session."""
+        try:
+            incomplete = self.intervals[0]['incomplete']
+            if incomplete is True:
+                rates = self.intervals[1]['timeseries']['respiratoryRate']
+        except KeyError:
+            # No active sessions, top result is last complete session.
+            rates = self.intervals[0]['timeseries']['respiratoryRate']
+        tmp = 0
+        num_rates = len(rates)
+        for rate in rates:
+            tmp += rate[1]
+        rateavg = tmp/num_rates
+        return rateavg
+
+    @property
+    def last_heart_rate(self):
+        """Return avg heart rate for last session."""
+        try:
+            incomplete = self.intervals[0]['incomplete']
+            if incomplete is True:
+                rates = self.intervals[1]['timeseries']['heartRate']
+        except KeyError:
+            # No active sessions, top result is last complete session.
+            rates = self.intervals[0]['timeseries']['heartRate']
+        tmp = 0
+        num_rates = len(rates)
+        for rate in rates:
+            tmp += rate[1]
+        rateavg = tmp/num_rates
+        return rateavg
+
+    @property
+    def last_values(self):
+        """Return a dict of all the 'last' parameters."""
+        last_dict = {
+            'date': self.last_session_date,
+            'score': self.last_sleep_score,
+            'breakdown': self.last_sleep_breakdown,
+            'tnt': self.last_tnt,
+            'bed_temp': self.last_bed_temp,
+            'room_temp': self.last_room_temp,
+            'resp_rate': self.last_resp_rate,
+            'heart_rate': self.last_heart_rate,
+        }
+        return last_dict
+
+    def dynamic_presence(self):
+        """
+        Determine presence based on bed heating level.
+
+        Method originated from Alex Lee Yuk Cheung SmartThings Code.
+        """
+
+        if self.now_heating:
+            heat_delta = self.heating_level - self.target_heating_level
+        else:
+            heat_delta = self.heating_level - 10
+
+        if heat_delta >= 10 and self.heating_level >= 25:
+            # Someone is likely in bed
+            self.presence = True
+
+        # Need to do logging tests to check rate of change over a 1 minute
+        # sampling interval for someone getting into and out of bed.
+
     @asyncio.coroutine
     def update_user(self):
         """Update all user data."""
+        self.past_heating_level = self.heating_level
         yield from self.update_intervals_data()
         # now = datetime.today()
         # start = now - timedelta(days=2)
         # end = now + timedelta(days=2)
         # yield from self.update_trend_data(start.strftime('%Y-%m-%d'),
         #                                  end.strftime('%Y-%m-%d'))
+        self.dynamic_presence()
 
     @asyncio.coroutine
     def set_heating_level(self, level, duration):
@@ -314,7 +477,7 @@ class EightUser(object):
         if trends is None:
             _LOGGER.error('Unable to fetch eight trend data.')
         else:
-            _LOGGER.debug('Trend Result: %s', trends)
+            # _LOGGER.debug('Trend Result: %s', trends)
             self.trends = trends['days']
 
     @asyncio.coroutine
@@ -326,5 +489,5 @@ class EightUser(object):
         if intervals is None:
             _LOGGER.error('Unable to fetch eight intervals data.')
         else:
-            _LOGGER.debug('Intervals Result: %s', intervals)
+            # _LOGGER.debug('Intervals Result: %s', intervals)
             self.intervals = intervals['intervals']
