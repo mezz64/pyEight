@@ -71,38 +71,50 @@ class EightUser(object):
     @property
     def target_heating_level(self):
         """Return target heating level."""
-        if self.side == 'Left':
-            level = self.device.device_data['leftTargetHeatingLevel']
-        elif self.side == 'Right':
-            level = self.device.device_data['rightTargetHeatingLevel']
-        return level
+        try:
+            if self.side == 'Left':
+                level = self.device.device_data['leftTargetHeatingLevel']
+            elif self.side == 'Right':
+                level = self.device.device_data['rightTargetHeatingLevel']
+            return level
+        except TypeError:
+            return None
 
     @property
     def heating_level(self):
         """Return heating level."""
-        if self.side == 'Left':
-            level = self.device.device_data['leftHeatingLevel']
-        elif self.side == 'Right':
-            level = self.device.device_data['rightHeatingLevel']
-        return level
+        try:
+            if self.side == 'Left':
+                level = self.device.device_data['leftHeatingLevel']
+            elif self.side == 'Right':
+                level = self.device.device_data['rightHeatingLevel']
+            return level
+        except TypeError:
+            return None
 
     @property
     def now_heating(self):
         """Return current heating state."""
-        if self.side == 'Left':
-            heat = self.device.device_data['leftNowHeating']
-        elif self.side == 'Right':
-            heat = self.device.device_data['rightNowHeating']
-        return heat
+        try:
+            if self.side == 'Left':
+                heat = self.device.device_data['leftNowHeating']
+            elif self.side == 'Right':
+                heat = self.device.device_data['rightNowHeating']
+            return heat
+        except TypeError:
+            return None
 
     @property
     def heating_remaining(self):
         """Return seconds of heat time remaining."""
-        if self.side == 'Left':
-            timerem = self.device.device_data['leftHeatingDuration']
-        elif self.side == 'Right':
-            timerem = self.device.device_data['rightHeatingDuration']
-        return timerem
+        try:
+            if self.side == 'Left':
+                timerem = self.device.device_data['leftHeatingDuration']
+            elif self.side == 'Right':
+                timerem = self.device.device_data['rightHeatingDuration']
+            return timerem
+        except TypeError:
+            return None
 
     @property
     def heating_values(self):
@@ -253,6 +265,7 @@ class EightUser(object):
         current_dict = {
             'date': self.current_session_date,
             'score': self.current_sleep_score,
+            'stage': self.current_sleep_stage,
             'breakdown': self.current_sleep_breakdown,
             'tnt': self.current_tnt,
             'bed_temp': self.current_bed_temp,
@@ -412,15 +425,23 @@ class EightUser(object):
 
         Method originated from Alex Lee Yuk Cheung SmartThings Code.
         """
-
         if self.now_heating:
             heat_delta = self.heating_level - self.target_heating_level
-        else:
+        elif self.heating_level is not None:
             heat_delta = self.heating_level - 10
+        else:
+            heat_delta = 0
 
-        if heat_delta >= 10 and self.heating_level >= 25:
+        if heat_delta >= 8 and self.heating_level >= 25:
             # Someone is likely in bed
             self.presence = True
+
+        if not self.now_heating and self.heating_level <= 15:
+            # Someone is not likely in bed
+            self.presence = False
+        elif self.now_heating and heat_delta < 8:
+            # Also a no bed condition
+            self.presence = False
 
         # Need to do logging tests to check rate of change over a 1 minute
         # sampling interval for someone getting into and out of bed.
@@ -435,7 +456,7 @@ class EightUser(object):
         # end = now + timedelta(days=2)
         # yield from self.update_trend_data(start.strftime('%Y-%m-%d'),
         #                                  end.strftime('%Y-%m-%d'))
-        self.dynamic_presence()
+        # self.dynamic_presence()
 
     @asyncio.coroutine
     def set_heating_level(self, level, duration):

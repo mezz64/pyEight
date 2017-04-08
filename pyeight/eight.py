@@ -102,10 +102,8 @@ class EightSleep(object):
             _LOGGER.info("Connection shut down.")
 
     @asyncio.coroutine
-    def update(self):
-        """Update data for all users/devices."""
-        yield from self.update_device_data()
-
+    def update_user_data(self):
+        """Update data for users."""
         for user in self.users:
             yield from self.users[user].update_user()
 
@@ -176,6 +174,8 @@ class EightSleep(object):
         else:
             # _LOGGER.debug('Device Result: %s', device_resp)
             self._device_json = device_resp['result']
+            for user in self.users:
+                self.users[user].dynamic_presence()
 
     @asyncio.coroutine
     def api_post(self, url, params=None, data=None):
@@ -197,13 +197,13 @@ class EightSleep(object):
 
             return post_result
 
-        except (aiohttp.errors.ClientError, asyncio.TimeoutError,
+        except (aiohttp.ClientError, asyncio.TimeoutError,
                 ConnectionRefusedError) as err:
             _LOGGER.error('Error posting Eight data: %s', err)
             return None
-        finally:
-            if post is not None:
-                yield from post.release()
+        # finally:
+        #     if post is not None:
+        #         yield from post.release()
 
     @asyncio.coroutine
     def api_get(self, url, params=None):
@@ -229,13 +229,13 @@ class EightSleep(object):
 
             return request_json
 
-        except (aiohttp.errors.ClientError, asyncio.TimeoutError,
+        except (aiohttp.ClientError, asyncio.TimeoutError,
                 ConnectionRefusedError) as err:
             _LOGGER.error('Error fetching Eight data: %s', err)
             return None
-        finally:
-            if request is not None:
-                yield from request.release()
+        # finally:
+        #     if request is not None:
+        #         yield from request.release()
 
     @asyncio.coroutine
     def api_put(self, url, data=None):
@@ -260,10 +260,10 @@ class EightSleep(object):
 
             return put_result
 
-        except (aiohttp.errors.ClientError, asyncio.TimeoutError,
+        except (aiohttp.ClientError, asyncio.TimeoutError,
                 ConnectionRefusedError) as err:
             _LOGGER.error('Error putting Eight data: %s', err)
             return None
-        finally:
-            if put is not None:
-                yield from put.release()
+        # finally:
+        #     if put is not None:
+        #         yield from put.release()
