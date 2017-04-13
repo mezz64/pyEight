@@ -57,11 +57,11 @@ class EightUser(object):
 
         self.trends = None
         self.intervals = None
-        self.data = device.device_data
+        # self.data = device.device_data
 
         # Variables to do dynamic presence
-        self.past_heating_level = None
         self.presence = False
+        self.presence_dict = {}
 
     @property
     def bed_presence(self):
@@ -72,9 +72,9 @@ class EightUser(object):
     def target_heating_level(self):
         """Return target heating level."""
         try:
-            if self.side == 'Left':
+            if self.side == 'left':
                 level = self.device.device_data['leftTargetHeatingLevel']
-            elif self.side == 'Right':
+            elif self.side == 'right':
                 level = self.device.device_data['rightTargetHeatingLevel']
             return level
         except TypeError:
@@ -84,21 +84,37 @@ class EightUser(object):
     def heating_level(self):
         """Return heating level."""
         try:
-            if self.side == 'Left':
+            if self.side == 'left':
                 level = self.device.device_data['leftHeatingLevel']
-            elif self.side == 'Right':
+            elif self.side == 'right':
                 level = self.device.device_data['rightHeatingLevel']
             return level
         except TypeError:
             return None
 
+    def past_heating_level(self, num):
+        """Return a heating level from the past."""
+        if num > 4:
+            return None
+
+        try:
+            if self.side == 'left':
+                level = self.device.device_data_history[
+                    num]['leftHeatingLevel']
+            elif self.side == 'right':
+                level = self.device.device_data_history[
+                    num]['rightHeatingLevel']
+            return level
+        except TypeError:
+            return 0
+
     @property
     def now_heating(self):
         """Return current heating state."""
         try:
-            if self.side == 'Left':
+            if self.side == 'left':
                 heat = self.device.device_data['leftNowHeating']
-            elif self.side == 'Right':
+            elif self.side == 'right':
                 heat = self.device.device_data['rightNowHeating']
             return heat
         except TypeError:
@@ -108,9 +124,9 @@ class EightUser(object):
     def heating_remaining(self):
         """Return seconds of heat time remaining."""
         try:
-            if self.side == 'Left':
+            if self.side == 'left':
                 timerem = self.device.device_data['leftHeatingDuration']
-            elif self.side == 'Right':
+            elif self.side == 'right':
                 timerem = self.device.device_data['rightHeatingDuration']
             return timerem
         except TypeError:
@@ -425,6 +441,10 @@ class EightUser(object):
 
         Method originated from Alex Lee Yuk Cheung SmartThings Code.
         """
+
+        # Not really sure what produces the best results yet here so lets
+        # maintain a dict of the results of each method
+
         if self.now_heating:
             heat_delta = self.heating_level - self.target_heating_level
         elif self.heating_level is not None:
@@ -432,31 +452,60 @@ class EightUser(object):
         else:
             heat_delta = 0
 
+        # Heat loss when someone leaves is much slower than heat rise when
+        # someone gets in.  If we have a delta of <= -4 for two cycles we
+        # probably got out of bed.
+        past_delta1 = self.past_heating_level(1) - self.past_heating_level(2)
+        past_delta2 = self.past_heating_level(2) - self.past_heating_level(3)
+
+        wide_delta = self.heating_level - self.past_heating_level(4)
+
+        if wide_delta <= -8:
+            # doesn't take into account heat turning off
+            self.presence_dict['wide_delta'] = False
+
+        if past_delta1 <= -4 and past_delta2 <= -4:
+            self.presence = False
+            self.presence_dict['heat_loss'] = False
+        elif heat_delta > 4 and past_delta1 > 4:
+            self.presence = True
+            self.presence_dict['heat_loss'] = True
+        elif past_delta1 == 0 and past_delta2 == 0:
+            self.presence = False
+            self.presence_dict['heat_loss'] = False
+
         if heat_delta >= 8 and self.heating_level >= 25:
             # Someone is likely in bed
             self.presence = True
+            self.presence_dict['heat_delta-level'] = True
+        else:
+            self.presence = False
+            self.presence_dict['heat_delta-level'] = False
 
         if not self.now_heating and self.heating_level <= 15:
             # Someone is not likely in bed
             self.presence = False
+            self.presence_dict['heat_level'] = False
         elif self.now_heating and heat_delta < 8:
             # Also a no bed condition
             self.presence = False
+            self.presence_dict['heat_level'] = False
+        else:
+            self.presence_dict['heat_level'] = True
 
-        # Need to do logging tests to check rate of change over a 1 minute
-        # sampling interval for someone getting into and out of bed.
+        _LOGGER.debug('%s Presence Results: %s', self.side, self.presence_dict)
 
     @asyncio.coroutine
     def update_user(self):
         """Update all user data."""
-        self.past_heating_level = self.heating_level
         yield from self.update_intervals_data()
+
+        # Not using the trends api endpoint for now.
         # now = datetime.today()
         # start = now - timedelta(days=2)
         # end = now + timedelta(days=2)
         # yield from self.update_trend_data(start.strftime('%Y-%m-%d'),
         #                                  end.strftime('%Y-%m-%d'))
-        # self.dynamic_presence()
 
     @asyncio.coroutine
     def set_heating_level(self, level, duration):
@@ -467,12 +516,12 @@ class EightUser(object):
         level = 10 if level < 10 else level
         level = 100 if level > 100 else level
 
-        if self.side == 'Left':
+        if self.side == 'left':
             data = {
                 'leftHeatingDuration': duration,
                 'leftTargetHeatingLevel': level
             }
-        elif self.side == 'Right':
+        elif self.side == 'right':
             data = {
                 'rightHeatingDuration': duration,
                 'rightTargetHeatingLevel': level

@@ -52,7 +52,8 @@ class EightSleep(object):
         self._expdate = None
         self._devices = None
 
-        self._device_json = None
+        # Setup 5 element list
+        self._device_json = [None, None, None, None, None]
 
         if loop is None:
             _LOGGER.info("Creating our own event loop.")
@@ -88,7 +89,12 @@ class EightSleep(object):
 
     @property
     def device_data(self):
-        """Return raw device_data json."""
+        """Return current raw device_data json."""
+        return self._device_json[0]
+
+    @property
+    def device_data_history(self):
+        """Return full raw device_data json list."""
         return self._device_json
 
     def initialize(self):
@@ -100,6 +106,13 @@ class EightSleep(object):
             self._event_loop.run_forever()
             self._event_loop.close()
             _LOGGER.info("Connection shut down.")
+
+    def fetch_userid(self, side):
+        """Return the userid for the specified bed side."""
+        for user in self.users:
+            obj = self.users[user]
+            if obj.side == side:
+                return user
 
     @asyncio.coroutine
     def update_user_data(self):
@@ -130,6 +143,7 @@ class EightSleep(object):
             self._userid = reg['session']['userId']
             self._token = reg['session']['token']
             self._expdate = reg['session']['expirationDate']
+            _LOGGER.debug('UserID: %s, Token: %s', self._userid, self.token)
 
     @asyncio.coroutine
     def fetch_device_list(self):
@@ -143,6 +157,7 @@ class EightSleep(object):
         else:
             # _LOGGER.debug('Device Result: %s', dlist)
             self._devices = dlist['user']['devices']
+            _LOGGER.debug('Devices: %s', self._devices)
 
     @asyncio.coroutine
     def assign_users(self):
@@ -158,10 +173,10 @@ class EightSleep(object):
             # _LOGGER.debug('%s Device data: %s', device, data)
 
             self.users[data['result']['leftUserId']] = \
-                EightUser(self, data['result']['leftUserId'], 'Left')
+                EightUser(self, data['result']['leftUserId'], 'left')
             if self._partner:
                 self.users[data['result']['rightUserId']] = \
-                    EightUser(self, data['result']['rightUserId'], 'Right')
+                    EightUser(self, data['result']['rightUserId'], 'right')
 
     @asyncio.coroutine
     def update_device_data(self):
@@ -172,8 +187,9 @@ class EightSleep(object):
         if device_resp is None:
             _LOGGER.error('Unable to fetch eight device data.')
         else:
-            # _LOGGER.debug('Device Result: %s', device_resp)
-            self._device_json = device_resp['result']
+            # Want to keep last 5 readings so purge the last after we add
+            self._device_json.insert(0, device_resp['result'])
+            self._device_json.pop()
             for user in self.users:
                 self.users[user].dynamic_presence()
 
