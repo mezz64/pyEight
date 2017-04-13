@@ -147,30 +147,34 @@ class EightUser(object):
     def current_session_date(self):
         """Return date/time for start of last session data."""
         try:
-            incomplete = self.intervals[0]['incomplete']
-            if incomplete is True:
-                date = self.intervals[0]['ts']
-                date_f = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ')
-                now = time.time()
-                offset = datetime.fromtimestamp(now) \
-                    - datetime.utcfromtimestamp(now)
-                date = date_f + offset
+            date = self.intervals[0]['ts']
+            date_f = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ')
+            now = time.time()
+            offset = datetime.fromtimestamp(now) \
+                - datetime.utcfromtimestamp(now)
+            date = date_f + offset
         except KeyError:
-            # No active sessions, top result is last complete session.
             date = None
         return date
+
+    @property
+    def current_session_processing(self):
+        """Return processing state of current session."""
+        try:
+            incomplete = self.intervals[0]['incomplete']
+        except KeyError:
+            # No incomplete key, not processing
+            incomplete = False
+        return incomplete
 
     @property
     def current_sleep_stage(self):
         """Return sleep stage for in-progress session."""
         try:
-            incomplete = self.intervals[0]['incomplete']
-            if incomplete is True:
-                stages = self.intervals[0]['stages']
-                num_stages = len(stages)
-                stage = stages[num_stages-1]['stage']
+            stages = self.intervals[0]['stages']
+            num_stages = len(stages)
+            stage = stages[num_stages-1]['stage']
         except KeyError:
-            # No active sessions, top result is last complete session.
             stage = None
         return stage
 
@@ -179,11 +183,8 @@ class EightUser(object):
         """Return sleep score for in-progress session."""
         # Check most recent result to see if it's incomplete.
         try:
-            incomplete = self.intervals[0]['incomplete']
-            if incomplete is True:
-                score = self.intervals[0]['score']
+            score = self.intervals[0]['score']
         except KeyError:
-            # No active sessions, top result is last complete session.
             score = None
         return score
 
@@ -191,19 +192,16 @@ class EightUser(object):
     def current_sleep_breakdown(self):
         """Return durations of sleep stages for in-progress session."""
         try:
-            incomplete = self.intervals[0]['incomplete']
-            if incomplete is True:
-                stages = self.intervals[0]['stages']
-                breakdown = {'awake': 0, 'light': 0, 'deep': 0}
-                for stage in stages:
-                    if stage['stage'] == 'awake':
-                        breakdown['awake'] += stage['duration']
-                    elif stage['stage'] == 'light':
-                        breakdown['light'] += stage['duration']
-                    elif stage['stage'] == 'deep':
-                        breakdown['deep'] += stage['duration']
+            stages = self.intervals[0]['stages']
+            breakdown = {'awake': 0, 'light': 0, 'deep': 0}
+            for stage in stages:
+                if stage['stage'] == 'awake':
+                    breakdown['awake'] += stage['duration']
+                elif stage['stage'] == 'light':
+                    breakdown['light'] += stage['duration']
+                elif stage['stage'] == 'deep':
+                    breakdown['deep'] += stage['duration']
         except KeyError:
-            # No active sessions, top result is last complete session.
             breakdown = None
         return breakdown
 
@@ -211,13 +209,10 @@ class EightUser(object):
     def current_bed_temp(self):
         """Return current bed temperature for in-progress session."""
         try:
-            incomplete = self.intervals[0]['incomplete']
-            if incomplete is True:
-                bedtemps = self.intervals[0]['timeseries']['tempBedC']
-                num_temps = len(bedtemps)
-                bedtemp = bedtemps[num_temps-1][1]
+            bedtemps = self.intervals[0]['timeseries']['tempBedC']
+            num_temps = len(bedtemps)
+            bedtemp = bedtemps[num_temps-1][1]
         except KeyError:
-            # No active sessions, top result is last complete session.
             bedtemp = None
         return bedtemp
 
@@ -225,13 +220,10 @@ class EightUser(object):
     def current_room_temp(self):
         """Return current room temperature for in-progress session."""
         try:
-            incomplete = self.intervals[0]['incomplete']
-            if incomplete is True:
-                rmtemps = self.intervals[0]['timeseries']['tempRoomC']
-                num_temps = len(rmtemps)
-                rmtemp = rmtemps[num_temps-1][1]
+            rmtemps = self.intervals[0]['timeseries']['tempRoomC']
+            num_temps = len(rmtemps)
+            rmtemp = rmtemps[num_temps-1][1]
         except KeyError:
-            # No active sessions, top result is last complete session.
             rmtemp = None
         return rmtemp
 
@@ -239,11 +231,8 @@ class EightUser(object):
     def current_tnt(self):
         """Return current toss & turns for in-progress session."""
         try:
-            incomplete = self.intervals[0]['incomplete']
-            if incomplete is True:
-                tnt = len(self.intervals[0]['timeseries']['tnt'])
+            tnt = len(self.intervals[0]['timeseries']['tnt'])
         except KeyError:
-            # No active sessions, top result is last complete session.
             tnt = None
         return tnt
 
@@ -251,13 +240,10 @@ class EightUser(object):
     def current_resp_rate(self):
         """Return current respiratory rate for in-progress session."""
         try:
-            incomplete = self.intervals[0]['incomplete']
-            if incomplete is True:
-                rates = self.intervals[0]['timeseries']['respiratoryRate']
-                num_rates = len(rates)
-                rate = rates[num_rates-1][1]
+            rates = self.intervals[0]['timeseries']['respiratoryRate']
+            num_rates = len(rates)
+            rate = rates[num_rates-1][1]
         except KeyError:
-            # No active sessions, top result is last complete session.
             rate = None
         return rate
 
@@ -265,13 +251,10 @@ class EightUser(object):
     def current_heart_rate(self):
         """Return current heart rate for in-progress session."""
         try:
-            incomplete = self.intervals[0]['incomplete']
-            if incomplete is True:
-                rates = self.intervals[0]['timeseries']['heartRate']
-                num_rates = len(rates)
-                rate = rates[num_rates-1][1]
+            rates = self.intervals[0]['timeseries']['heartRate']
+            num_rates = len(rates)
+            rate = rates[num_rates-1][1]
         except KeyError:
-            # No active sessions, top result is last complete session.
             rate = None
         return rate
 
@@ -288,6 +271,7 @@ class EightUser(object):
             'room_temp': self.current_room_temp,
             'resp_rate': self.current_resp_rate,
             'heart_rate': self.current_heart_rate,
+            'processing': self.current_session_processing,
         }
         return current_dict
 
@@ -295,12 +279,9 @@ class EightUser(object):
     def last_session_date(self):
         """Return date/time for start of last session data."""
         try:
-            incomplete = self.intervals[0]['incomplete']
-            if incomplete is True:
-                date = self.intervals[1]['ts']
+            date = self.intervals[1]['ts']
         except KeyError:
-            # No active sessions, top result is last complete session.
-            date = self.intervals[0]['ts']
+            return None
         date_f = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ')
         now = time.time()
         offset = datetime.fromtimestamp(now) - datetime.utcfromtimestamp(now)
@@ -309,26 +290,19 @@ class EightUser(object):
     @property
     def last_sleep_score(self):
         """Return sleep score from last complete sleep session."""
-        # Check most recent result to see if it's incomplete.
         try:
-            incomplete = self.intervals[0]['incomplete']
-            if incomplete is True:
-                score = self.intervals[1]['score']
+            score = self.intervals[1]['score']
         except KeyError:
-            # No active sessions, top result is last complete session.
-            score = self.intervals[0]['score']
+            score = None
         return score
 
     @property
     def last_sleep_breakdown(self):
         """Return durations of sleep stages for last complete session."""
         try:
-            incomplete = self.intervals[0]['incomplete']
-            if incomplete is True:
-                stages = self.intervals[1]['stages']
+            stages = self.intervals[1]['stages']
         except KeyError:
-            # No active sessions, top result is last complete session.
-            stages = self.intervals[0]['stages']
+            return None
 
         breakdown = {'awake': 0, 'light': 0, 'deep': 0}
         for stage in stages:
@@ -344,12 +318,9 @@ class EightUser(object):
     def last_bed_temp(self):
         """Return avg bed temperature for last session."""
         try:
-            incomplete = self.intervals[0]['incomplete']
-            if incomplete is True:
-                bedtemps = self.intervals[1]['timeseries']['tempBedC']
+            bedtemps = self.intervals[1]['timeseries']['tempBedC']
         except KeyError:
-            # No active sessions, top result is last complete session.
-            bedtemps = self.intervals[0]['timeseries']['tempBedC']
+            return None
         tmp = 0
         num_temps = len(bedtemps)
         for temp in bedtemps:
@@ -361,12 +332,9 @@ class EightUser(object):
     def last_room_temp(self):
         """Return avg room temperature for last session."""
         try:
-            incomplete = self.intervals[0]['incomplete']
-            if incomplete is True:
-                rmtemps = self.intervals[1]['timeseries']['tempRoomC']
+            rmtemps = self.intervals[1]['timeseries']['tempRoomC']
         except KeyError:
-            # No active sessions, top result is last complete session.
-            rmtemps = self.intervals[0]['timeseries']['tempRoomC']
+            return None
         tmp = 0
         num_temps = len(rmtemps)
         for temp in rmtemps:
@@ -378,24 +346,18 @@ class EightUser(object):
     def last_tnt(self):
         """Return toss & turns for last session."""
         try:
-            incomplete = self.intervals[0]['incomplete']
-            if incomplete is True:
-                tnt = len(self.intervals[1]['timeseries']['tnt'])
+            tnt = len(self.intervals[1]['timeseries']['tnt'])
         except KeyError:
-            # No active sessions, top result is last complete session.
-            tnt = len(self.intervals[0]['timeseries']['tnt'])
+            return None
         return tnt
 
     @property
     def last_resp_rate(self):
         """Return avg respiratory rate for last session."""
         try:
-            incomplete = self.intervals[0]['incomplete']
-            if incomplete is True:
-                rates = self.intervals[1]['timeseries']['respiratoryRate']
+            rates = self.intervals[1]['timeseries']['respiratoryRate']
         except KeyError:
-            # No active sessions, top result is last complete session.
-            rates = self.intervals[0]['timeseries']['respiratoryRate']
+            return None
         tmp = 0
         num_rates = len(rates)
         for rate in rates:
@@ -407,12 +369,9 @@ class EightUser(object):
     def last_heart_rate(self):
         """Return avg heart rate for last session."""
         try:
-            incomplete = self.intervals[0]['incomplete']
-            if incomplete is True:
-                rates = self.intervals[1]['timeseries']['heartRate']
+            rates = self.intervals[1]['timeseries']['heartRate']
         except KeyError:
-            # No active sessions, top result is last complete session.
-            rates = self.intervals[0]['timeseries']['heartRate']
+            return None
         tmp = 0
         num_rates = len(rates)
         for rate in rates:
@@ -508,7 +467,7 @@ class EightUser(object):
         #                                  end.strftime('%Y-%m-%d'))
 
     @asyncio.coroutine
-    def set_heating_level(self, level, duration):
+    def set_heating_level(self, level, duration=0):
         """Update heating data json."""
         url = '{}/devices/{}'.format(API_URL, self.device.deviceid)
 
