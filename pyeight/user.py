@@ -288,6 +288,16 @@ class EightUser(object):
         return date_f + offset
 
     @property
+    def last_session_processing(self):
+        """Return processing state of current session."""
+        try:
+            incomplete = self.intervals[1]['incomplete']
+        except KeyError:
+            # No incomplete key, not processing
+            incomplete = False
+        return incomplete
+
+    @property
     def last_sleep_score(self):
         """Return sleep score from last complete sleep session."""
         try:
@@ -391,6 +401,7 @@ class EightUser(object):
             'room_temp': self.last_room_temp,
             'resp_rate': self.last_resp_rate,
             'heart_rate': self.last_heart_rate,
+            'processing': self.last_session_processing,
         }
         return last_dict
 
@@ -490,7 +501,9 @@ class EightUser(object):
         if set_heat is None:
             _LOGGER.error('Unable to set eight heating level.')
         else:
-            _LOGGER.debug('Heating Result: %s', set_heat)
+            # _LOGGER.debug('Heating Result: %s', set_heat)
+            # Standard device json is returned after setting
+            self.device.handle_device_json(set_heat['device'])
 
     @asyncio.coroutine
     def update_trend_data(self, startdate, enddate):

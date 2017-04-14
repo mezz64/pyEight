@@ -178,6 +178,11 @@ class EightSleep(object):
                 self.users[data['result']['rightUserId']] = \
                     EightUser(self, data['result']['rightUserId'], 'right')
 
+    def handle_device_json(self, data):
+        """Manage the device json list."""
+        self._device_json.insert(0, data)
+        self._device_json.pop()
+
     @asyncio.coroutine
     def update_device_data(self):
         """Update device data json."""
@@ -188,8 +193,9 @@ class EightSleep(object):
             _LOGGER.error('Unable to fetch eight device data.')
         else:
             # Want to keep last 5 readings so purge the last after we add
-            self._device_json.insert(0, device_resp['result'])
-            self._device_json.pop()
+            self.handle_device_json(device_resp['result'])
+            # self._device_json.insert(0, device_resp['result'])
+            # self._device_json.pop()
             for user in self.users:
                 self.users[user].dynamic_presence()
 
