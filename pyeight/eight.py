@@ -8,7 +8,6 @@ Licensed under the MIT license.
 """
 
 import logging
-#import json
 import asyncio
 import aiohttp
 import async_timeout
@@ -25,12 +24,6 @@ try:
 except AttributeError:
     # Python 3.4.3 and earlier has this as async
     ensure_future = asyncio.async
-
-"""
-Some general project notes that don't fit anywhere else:
-
-
-"""
 
 
 class EightSleep(object):
@@ -56,11 +49,9 @@ class EightSleep(object):
         self._device_json = [None, None, None, None, None]
 
         if loop is None:
-            _LOGGER.info("Creating our own event loop.")
-            self._event_loop = asyncio.new_event_loop()
-            self._own_loop = True
+            _LOGGER.info("Must supply asyncio loop.  Quitting")
+            return None
         else:
-            _LOGGER.info("Latching onto an existing event loop.")
             self._event_loop = loop
             self._own_loop = False
 
@@ -68,9 +59,6 @@ class EightSleep(object):
 
         self._api_session = aiohttp.ClientSession(
             headers=DEFAULT_HEADERS, loop=self._event_loop)
-
-        # self.startup = False
-        # self.initialize()
 
     @property
     def token(self):
@@ -97,16 +85,6 @@ class EightSleep(object):
         """Return full raw device_data json list."""
         return self._device_json
 
-    def initialize(self):
-        """Initialize api connection."""
-        ensure_future(self.fetch_token(), loop=self._event_loop)
-
-        if self._own_loop:
-            _LOGGER.info("Starting up our own event loop.")
-            self._event_loop.run_forever()
-            self._event_loop.close()
-            _LOGGER.info("Connection shut down.")
-
     def fetch_userid(self, side):
         """Return the userid for the specified bed side."""
         for user in self.users:
@@ -128,6 +106,12 @@ class EightSleep(object):
         yield from self.assign_users()
 
     @asyncio.coroutine
+    def stop(self):
+        """Stop api session."""
+        _LOGGER.debug('Closing eight sleep api session.')
+        yield from self._api_session.close()
+
+    @asyncio.coroutine
     def fetch_token(self):
         """Fetch new session token from api."""
         url = '{}/login'.format(API_URL)
@@ -138,8 +122,6 @@ class EightSleep(object):
             # self._registered = False
             _LOGGER.error('Unable to fetch eight token.')
         else:
-            # _LOGGER.debug('Token Result: %s', reg)
-            # Assume left side for now, we will update later
             self._userid = reg['session']['userId']
             self._token = reg['session']['token']
             self._expdate = reg['session']['expirationDate']
@@ -152,10 +134,8 @@ class EightSleep(object):
 
         dlist = yield from self.api_get(url)
         if dlist is None:
-            # self._registered = False
             _LOGGER.error('Unable to fetch eight devices.')
         else:
-            # _LOGGER.debug('Device Result: %s', dlist)
             self._devices = dlist['user']['devices']
             _LOGGER.debug('Devices: %s', self._devices)
 
@@ -170,8 +150,6 @@ class EightSleep(object):
         if data is None:
             _LOGGER.error('Unable to assign eight device users.')
         else:
-            # _LOGGER.debug('%s Device data: %s', device, data)
-
             self.users[data['result']['leftUserId']] = \
                 EightUser(self, data['result']['leftUserId'], 'left')
             if self._partner:
@@ -194,8 +172,6 @@ class EightSleep(object):
         else:
             # Want to keep last 5 readings so purge the last after we add
             self.handle_device_json(device_resp['result'])
-            # self._device_json.insert(0, device_resp['result'])
-            # self._device_json.pop()
             for user in self.users:
                 self.users[user].dynamic_presence()
 
@@ -221,11 +197,8 @@ class EightSleep(object):
 
         except (aiohttp.ClientError, asyncio.TimeoutError,
                 ConnectionRefusedError) as err:
-            _LOGGER.error('Error posting Eight data: %s', err)
+            _LOGGER.error('Error posting Eight data. %s', err)
             return None
-        # finally:
-        #     if post is not None:
-        #         yield from post.release()
 
     @asyncio.coroutine
     def api_get(self, url, params=None):
@@ -253,11 +226,8 @@ class EightSleep(object):
 
         except (aiohttp.ClientError, asyncio.TimeoutError,
                 ConnectionRefusedError) as err:
-            _LOGGER.error('Error fetching Eight data: %s', err)
+            _LOGGER.error('Error fetching Eight data. %s', err)
             return None
-        # finally:
-        #     if request is not None:
-        #         yield from request.release()
 
     @asyncio.coroutine
     def api_put(self, url, data=None):
@@ -284,8 +254,5 @@ class EightSleep(object):
 
         except (aiohttp.ClientError, asyncio.TimeoutError,
                 ConnectionRefusedError) as err:
-            _LOGGER.error('Error putting Eight data: %s', err)
+            _LOGGER.error('Error putting Eight data. %s', err)
             return None
-        # finally:
-        #     if put is not None:
-        #         yield from put.release()
