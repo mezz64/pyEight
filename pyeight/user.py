@@ -57,7 +57,6 @@ class EightUser(object):
 
         self.trends = None
         self.intervals = None
-        # self.data = device.device_data
 
         # Variables to do dynamic presence
         self.presence = False
@@ -133,6 +132,21 @@ class EightUser(object):
             return None
 
     @property
+    def last_seen(self):
+        """Return mattress last seen time."""
+        try:
+            if self.side == 'left':
+                lastseen = self.device.device_data['leftPresenceEnd']
+            elif self.side == 'right':
+                lastseen = self.device.device_data['rightPresenceEnd']
+
+            date = datetime.fromtimestamp(int(lastseen)) \
+                .strftime('%Y-%m-%dT%H:%M:%S')
+            return date
+        except TypeError:
+            return None
+
+    @property
     def heating_values(self):
         """Return a dict of all the current heating values."""
         heating_dict = {
@@ -140,6 +154,7 @@ class EightUser(object):
             'target': self.target_heating_level,
             'active': self.now_heating,
             'remaining': self.heating_remaining,
+            'last_seen': self.last_seen,
         }
         return heating_dict
 
@@ -174,6 +189,14 @@ class EightUser(object):
             stages = self.intervals[0]['stages']
             num_stages = len(stages)
             stage = stages[num_stages-1]['stage']
+
+            # Check sleep stage against last_seen time to make
+            # sure we don't get stuck in a non-awake state.
+            delta_elap = datetime.fromtimestamp(time.time()) \
+                - datetime.strptime(self.last_seen, '%Y-%m-%dT%H:%M:%S')
+            if stage != 'awake' and delta_elap.total_seconds() > 900:
+                # Bed hasn't seen us for 15min so set awake.
+                stage = 'awake'
         except KeyError:
             stage = None
         return stage
@@ -407,14 +430,21 @@ class EightUser(object):
 
     def dynamic_presence(self):
         """
-        Determine presence based on bed heating level.
+        Determine presence based on bed heating level and end presence
+        time reported by the api.
 
-        Method originated from Alex Lee Yuk Cheung SmartThings Code.
+        Idea originated from Alex Lee Yuk Cheung SmartThings Code.
         """
 
-        # Not really sure what produces the best results yet here so lets
-        # maintain a dict of the results of each method
+        # Last seen can lag real-time by up to 35min so this is mostly a
+        # backup to using the heat values.
+        seen_delta = datetime.fromtimestamp(time.time()) \
+            - datetime.strptime(self.last_seen, '%Y-%m-%dT%H:%M:%S')
+        if self.presence and seen_delta.total_seconds() > 2100:
+            self.presence = False
+            return
 
+        # heat_delta always represents the added heat due to a body
         if self.now_heating:
             heat_delta = self.heating_level - self.target_heating_level
         elif self.heating_level is not None:
@@ -430,40 +460,28 @@ class EightUser(object):
 
         wide_delta = self.heating_level - self.past_heating_level(4)
 
-        if wide_delta <= -8:
-            # doesn't take into account heat turning off
-            self.presence_dict['wide_delta'] = False
-
-        if past_delta1 <= -4 and past_delta2 <= -4:
+        if wide_delta <= -20 and self.presence and not self.now_heating:
             self.presence = False
-            self.presence_dict['heat_loss'] = False
-        elif heat_delta > 4 and past_delta1 > 4:
-            self.presence = True
-            self.presence_dict['heat_loss'] = True
-        elif past_delta1 == 0 and past_delta2 == 0:
-            self.presence = False
-            self.presence_dict['heat_loss'] = False
+            return
 
         if heat_delta >= 8 and self.heating_level >= 25:
             # Someone is likely in bed
             self.presence = True
-            self.presence_dict['heat_delta-level'] = True
+            return
         else:
             self.presence = False
-            self.presence_dict['heat_delta-level'] = False
+            return
 
         if not self.now_heating and self.heating_level <= 15:
             # Someone is not likely in bed
             self.presence = False
-            self.presence_dict['heat_level'] = False
+            return
         elif self.now_heating and heat_delta < 8:
             # Also a no bed condition
             self.presence = False
-            self.presence_dict['heat_level'] = False
-        else:
-            self.presence_dict['heat_level'] = True
+            return
 
-        _LOGGER.debug('%s Presence Results: %s', self.side, self.presence_dict)
+        # _LOGGER.debug('%s Presence Results: %s', self.side, self.presence)
 
     @asyncio.coroutine
     def update_user(self):

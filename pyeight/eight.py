@@ -166,6 +166,8 @@ class EightSleep(object):
         """Update device data json."""
         url = '{}/devices/{}?offlineView=true'.format(API_URL, self.deviceid)
 
+        # Need to add a check for token expiration and renew if needed.
+
         device_resp = yield from self.api_get(url)
         if device_resp is None:
             _LOGGER.error('Unable to fetch eight device data.')
