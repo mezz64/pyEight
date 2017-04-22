@@ -8,7 +8,8 @@ Licensed under the MIT license.
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
+import statistics
 import time
 import asyncio
 
@@ -93,8 +94,8 @@ class EightUser(object):
 
     def past_heating_level(self, num):
         """Return a heating level from the past."""
-        if num > 4:
-            return None
+        if num > 9:
+            return 0
 
         try:
             if self.side == 'left':
@@ -428,6 +429,51 @@ class EightUser(object):
         }
         return last_dict
 
+    def heating_stats(self):
+        """Calculate some heating data stats."""
+        local_5 = []
+        local_10 = []
+        # time_5 = [1, 2, 3, 4, 5]
+        # time_10 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+        for i in range(0, 10):
+            level = self.past_heating_level(i)
+            if level == 0:
+                _LOGGER.debug('Cant calculate stats yet...')
+                return
+            if i < 5:
+                local_5.append(level)
+            local_10.append(level)
+
+        _LOGGER.debug('%s Heating History: %s', self.side, local_10)
+
+        try:
+            # Average of 5min on the history dict.
+            fiveminavg = statistics.mean(local_5)
+            tenminavg = statistics.mean(local_10)
+            _LOGGER.debug('%s Heating 5 min avg: %s', self.side, fiveminavg)
+            _LOGGER.debug('%s Heating 10 min avg: %s', self.side, tenminavg)
+
+            # Standard deviation
+            fivestdev = statistics.stdev(local_5)
+            tenstdev = statistics.stdev(local_10)
+            _LOGGER.debug('%s Heating 5 min stdev: %s', self.side, fivestdev)
+            _LOGGER.debug('%s Heating 10 min stdev: %s', self.side, tenstdev)
+
+            # Variance
+            fivevar = statistics.variance(local_5)
+            tenvar = statistics.variance(local_10)
+            _LOGGER.debug('%s Heating 5 min variance: %s', self.side, fivevar)
+            _LOGGER.debug('%s Heating 10 min variance: %s', self.side, tenvar)
+        except:
+            _LOGGER.debug('Cant calculate stats yet...')
+
+        # Other possible options for exploration....
+        # Pearson correlation coefficient
+        # Spearman rank correlation
+        # Kendalls Tau
+
+
     def dynamic_presence(self):
         """
         Determine presence based on bed heating level and end presence
@@ -435,53 +481,65 @@ class EightUser(object):
 
         Idea originated from Alex Lee Yuk Cheung SmartThings Code.
         """
+        limp = False
 
-        # Last seen can lag real-time by up to 35min so this is mostly a
-        # backup to using the heat values.
-        seen_delta = datetime.fromtimestamp(time.time()) \
-            - datetime.strptime(self.last_seen, '%Y-%m-%dT%H:%M:%S')
-        if self.presence and seen_delta.total_seconds() > 2100:
-            self.presence = False
-            return
+        self.heating_stats()
 
-        # heat_delta always represents the added heat due to a body
+        # Need at least a 5 min buffer of data to return decent results
+        # If we don't have that (at start) flag limp mode
+        if self.past_heating_level(4) == 0:
+            limp = True
+        elif self.heating_level:
+            hist_delta = self.heating_level - self.past_heating_level(4)
+            hist_delta_2 = self.past_heating_level(1) \
+                - self.past_heating_level(5)
+            hist_delta_3 = self.past_heating_level(2) \
+                - self.past_heating_level(6)
+            hist_sum = hist_delta + hist_delta_2 + hist_delta_3
+
+        # Calculate a heating delta that always represents user heat added
         if self.now_heating:
             heat_delta = self.heating_level - self.target_heating_level
-        elif self.heating_level is not None:
+        elif self.heating_level:
             heat_delta = self.heating_level - 10
-        else:
-            heat_delta = 0
 
-        # Heat loss when someone leaves is much slower than heat rise when
-        # someone gets in.  If we have a delta of <= -4 for two cycles we
-        # probably got out of bed.
-        past_delta1 = self.past_heating_level(1) - self.past_heating_level(2)
-        past_delta2 = self.past_heating_level(2) - self.past_heating_level(3)
+        if not self.presence:
+            # We don't think anyone is in bed, lets do some checks to
+            # verify that's the case.
+            if limp:
+                # No history so do a basic level check
+                if heat_delta >= 8 and self.heating_level >= 25:
+                    self.presence = True
+            else:
+                if self.heating_level >= 25:
+                    # Either someone is in bed or we have residual heat
+                    if hist_delta >= 10 and heat_delta >= 8:
+                        self.presence = True
 
-        wide_delta = self.heating_level - self.past_heating_level(4)
+        elif self.presence:
+            # We think someone is in bed, lets do some check to
+            # verify that's the case.
+            if limp:
+                # We don't have enough info to reliably say someone left
+                # the bed so just return.
+                return
+            else:
+                if self.heating_level <= 15:
+                    # This is a failsafe, very slow
+                    self.presence = False
+                else:
+                    if hist_sum < 30 and self.heating_level < 50:
+                        # This still isn't very fast
+                        self.presence = False
 
-        if wide_delta <= -20 and self.presence and not self.now_heating:
-            self.presence = False
-            return
+                    # Last seen can lag real-time by up to 35min so this is
+                    # mostly a backup to using the heat values.
+                    seen_delta = datetime.fromtimestamp(time.time()) \
+                        - datetime.strptime(self.last_seen, '%Y-%m-%dT%H:%M:%S')
+                    if self.presence and seen_delta.total_seconds() > 2100:
+                        self.presence = False
 
-        if heat_delta >= 8 and self.heating_level >= 25:
-            # Someone is likely in bed
-            self.presence = True
-            return
-        else:
-            self.presence = False
-            return
-
-        if not self.now_heating and self.heating_level <= 15:
-            # Someone is not likely in bed
-            self.presence = False
-            return
-        elif self.now_heating and heat_delta < 8:
-            # Also a no bed condition
-            self.presence = False
-            return
-
-        # _LOGGER.debug('%s Presence Results: %s', self.side, self.presence)
+        _LOGGER.debug('%s Presence Results: %s', self.side, self.presence)
 
     @asyncio.coroutine
     def update_user(self):

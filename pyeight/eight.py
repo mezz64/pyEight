@@ -45,8 +45,9 @@ class EightSleep(object):
         self._expdate = None
         self._devices = None
 
-        # Setup 5 element list
-        self._device_json = [None, None, None, None, None]
+        # Setup 10 element list
+        self._device_json = [None, None, None, None, None,
+                             None, None, None, None, None]
 
         if loop is None:
             _LOGGER.info("Must supply asyncio loop.  Quitting")
@@ -172,7 +173,7 @@ class EightSleep(object):
         if device_resp is None:
             _LOGGER.error('Unable to fetch eight device data.')
         else:
-            # Want to keep last 5 readings so purge the last after we add
+            # Want to keep last 10 readings so purge the last after we add
             self.handle_device_json(device_resp['result'])
             for user in self.users:
                 self.users[user].dynamic_presence()
