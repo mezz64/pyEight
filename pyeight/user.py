@@ -481,63 +481,45 @@ class EightUser(object):
 
         Idea originated from Alex Lee Yuk Cheung SmartThings Code.
         """
-        limp = False
 
         self.heating_stats()
 
-        # Need at least a 5 min buffer of data to return decent results
-        # If we don't have that (at start) flag limp mode
-        if self.past_heating_level(4) == 0:
-            limp = True
-        elif self.heating_level:
-            hist_delta = self.heating_level - self.past_heating_level(4)
-            hist_delta_2 = self.past_heating_level(1) \
-                - self.past_heating_level(5)
-            hist_delta_3 = self.past_heating_level(2) \
-                - self.past_heating_level(6)
-            hist_sum = hist_delta + hist_delta_2 + hist_delta_3
-
-        # Calculate a heating delta that always represents user heat added
-        if self.now_heating:
-            heat_delta = self.heating_level - self.target_heating_level
-        elif self.heating_level:
-            heat_delta = self.heating_level - 10
-
         if not self.presence:
-            # We don't think anyone is in bed, lets do some checks to
-            # verify that's the case.
-            if limp:
-                # No history so do a basic level check
-                if heat_delta >= 8 and self.heating_level >= 25:
-                    self.presence = True
-            else:
-                if self.heating_level >= 25:
-                    # Either someone is in bed or we have residual heat
-                    if hist_delta >= 10 and heat_delta >= 8:
+            if self.heating_level > 50:
+                # Can likely make this better
+                if not self.now_heating:
+                        self.presence = True
+                elif self.heating_level - self.target_heating_level >= 8:
+                        self.presence = True
+            elif self.heating_level > 25:
+                # Catch rising edge
+                if self.past_heating_level(0) - self.past_heating_level(1) >= 0 \
+                and self.past_heating_level(1) - self.past_heating_level(2) >= 0 \
+                and self.past_heating_level(2) - self.past_heating_level(3) >= 0:
+                    # Values are increasing so we are likely in bed
+                    if not self.now_heating:
+                        self.presence = True
+                    elif self.heating_level - self.target_heating_level >= 8:
                         self.presence = True
 
         elif self.presence:
-            # We think someone is in bed, lets do some check to
-            # verify that's the case.
-            if limp:
-                # We don't have enough info to reliably say someone left
-                # the bed so just return.
-                return
-            else:
-                if self.heating_level <= 15:
-                    # This is a failsafe, very slow
+            if self.heating_level <= 15:
+                # Failsafe, very slow
+                self.presence = False
+            elif self.heating_level < 50:
+                if self.past_heating_level(0) - self.past_heating_level(1) < 0 \
+                and self.past_heating_level(1) - self.past_heating_level(2) < 0 \
+                and self.past_heating_level(2) - self.past_heating_level(3) < 0:
+                    # Values are decreasing so we are likely out of bed
                     self.presence = False
-                else:
-                    if hist_sum < 30 and self.heating_level < 50:
-                        # This still isn't very fast
-                        self.presence = False
 
-                    # Last seen can lag real-time by up to 35min so this is
-                    # mostly a backup to using the heat values.
-                    seen_delta = datetime.fromtimestamp(time.time()) \
-                        - datetime.strptime(self.last_seen, '%Y-%m-%dT%H:%M:%S')
-                    if self.presence and seen_delta.total_seconds() > 2100:
-                        self.presence = False
+        # Last seen can lag real-time by up to 35min so this is
+        # mostly a backup to using the heat values.
+        seen_delta = datetime.fromtimestamp(time.time()) \
+            - datetime.strptime(self.last_seen, '%Y-%m-%dT%H:%M:%S')
+        _LOGGER.debug('%s Last seen time delta: %s', self.side, seen_delta.total_seconds())
+        # if self.presence and seen_delta.total_seconds() > 2100:
+        #     self.presence = False
 
         _LOGGER.debug('%s Presence Results: %s', self.side, self.presence)
 
