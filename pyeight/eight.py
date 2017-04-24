@@ -9,6 +9,8 @@ Licensed under the MIT license.
 
 import logging
 import asyncio
+from datetime import datetime
+import time
 import aiohttp
 import async_timeout
 
@@ -120,7 +122,6 @@ class EightSleep(object):
 
         reg = yield from self.api_post(url, None, payload)
         if reg is None:
-            # self._registered = False
             _LOGGER.error('Unable to fetch eight token.')
         else:
             self._userid = reg['session']['userId']
@@ -167,7 +168,13 @@ class EightSleep(object):
         """Update device data json."""
         url = '{}/devices/{}?offlineView=true'.format(API_URL, self.deviceid)
 
-        # Need to add a check for token expiration and renew if needed.
+        # Check for access token expiration (every 15days)
+        exp_delta = datetime.strptime(self._expdate, '%Y-%m-%dT%H:%M:%S.%fZ') \
+            - datetime.fromtimestamp(time.time())
+        # Renew 1hr before expiration
+        if exp_delta < 3600:
+            _LOGGER.debug('Fetching new access token before expiration.')
+            yield from self.fetch_token()
 
         device_resp = yield from self.api_get(url)
         if device_resp is None:

@@ -17,36 +17,6 @@ from pyeight.constants import (API_URL)
 
 _LOGGER = logging.getLogger(__name__)
 
-"""
-Best way to structure this is to work to one HASS sensor for sleep data
-and one for bed data for each side of the bed (if applicable).
-
-Last Sleep Session sensor
-_________________________________________
-State will be the sleep score.
-Attributes will be:
-    Duration of awake, light, deep sleep
-    Number of tosses and turns
-    Average room temp
-    Average bed temp
-    Average respiritory rate
-    Average heart rate
-    Time spent heating
-
-* These values are very dynamic during sleep so may only be useful
-  when the "incomplete" parameter isn't present
-
-Bed data sensor
-_________________________________________
-State will be current heating level
-Attributes will be:
-    Target heating level
-    Heating Active (true/false)
-    Heating duration remaining
-    Time last seen in-bed
-
-"""
-
 
 class EightUser(object):
     """Class for handling data of each eight user."""
@@ -61,7 +31,6 @@ class EightUser(object):
 
         # Variables to do dynamic presence
         self.presence = False
-        self.presence_dict = {}
 
     @property
     def bed_presence(self):
@@ -195,8 +164,8 @@ class EightUser(object):
             # sure we don't get stuck in a non-awake state.
             delta_elap = datetime.fromtimestamp(time.time()) \
                 - datetime.strptime(self.last_seen, '%Y-%m-%dT%H:%M:%S')
-            if stage != 'awake' and delta_elap.total_seconds() > 900:
-                # Bed hasn't seen us for 15min so set awake.
+            if stage != 'awake' and delta_elap.total_seconds() > 1800:
+                # Bed hasn't seen us for 30min so set awake.
                 stage = 'awake'
         except KeyError:
             stage = None
@@ -205,7 +174,6 @@ class EightUser(object):
     @property
     def current_sleep_score(self):
         """Return sleep score for in-progress session."""
-        # Check most recent result to see if it's incomplete.
         try:
             score = self.intervals[0]['score']
         except KeyError:
@@ -433,8 +401,6 @@ class EightUser(object):
         """Calculate some heating data stats."""
         local_5 = []
         local_10 = []
-        # time_5 = [1, 2, 3, 4, 5]
-        # time_10 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
         for i in range(0, 10):
             level = self.past_heating_level(i)
@@ -482,20 +448,20 @@ class EightUser(object):
         Idea originated from Alex Lee Yuk Cheung SmartThings Code.
         """
 
-        self.heating_stats()
+        # self.heating_stats()
 
         if not self.presence:
             if self.heating_level > 50:
                 # Can likely make this better
                 if not self.now_heating:
-                        self.presence = True
+                    self.presence = True
                 elif self.heating_level - self.target_heating_level >= 8:
-                        self.presence = True
+                    self.presence = True
             elif self.heating_level > 25:
                 # Catch rising edge
                 if self.past_heating_level(0) - self.past_heating_level(1) >= 0 \
-                and self.past_heating_level(1) - self.past_heating_level(2) >= 0 \
-                and self.past_heating_level(2) - self.past_heating_level(3) >= 0:
+                    and self.past_heating_level(1) - self.past_heating_level(2) >= 0 \
+                        and self.past_heating_level(2) - self.past_heating_level(3) >= 0:
                     # Values are increasing so we are likely in bed
                     if not self.now_heating:
                         self.presence = True
@@ -508,16 +474,17 @@ class EightUser(object):
                 self.presence = False
             elif self.heating_level < 50:
                 if self.past_heating_level(0) - self.past_heating_level(1) < 0 \
-                and self.past_heating_level(1) - self.past_heating_level(2) < 0 \
-                and self.past_heating_level(2) - self.past_heating_level(3) < 0:
+                    and self.past_heating_level(1) - self.past_heating_level(2) < 0 \
+                        and self.past_heating_level(2) - self.past_heating_level(3) < 0:
                     # Values are decreasing so we are likely out of bed
                     self.presence = False
 
         # Last seen can lag real-time by up to 35min so this is
         # mostly a backup to using the heat values.
-        seen_delta = datetime.fromtimestamp(time.time()) \
-            - datetime.strptime(self.last_seen, '%Y-%m-%dT%H:%M:%S')
-        _LOGGER.debug('%s Last seen time delta: %s', self.side, seen_delta.total_seconds())
+        # seen_delta = datetime.fromtimestamp(time.time()) \
+        #     - datetime.strptime(self.last_seen, '%Y-%m-%dT%H:%M:%S')
+        # _LOGGER.debug('%s Last seen time delta: %s', self.side,
+        #               seen_delta.total_seconds())
         # if self.presence and seen_delta.total_seconds() > 2100:
         #     self.presence = False
 
@@ -528,7 +495,7 @@ class EightUser(object):
         """Update all user data."""
         yield from self.update_intervals_data()
 
-        # Not using the trends api endpoint for now.
+        # Not using the trends api endpoint for now...
         # now = datetime.today()
         # start = now - timedelta(days=2)
         # end = now + timedelta(days=2)
@@ -559,7 +526,6 @@ class EightUser(object):
         if set_heat is None:
             _LOGGER.error('Unable to set eight heating level.')
         else:
-            # _LOGGER.debug('Heating Result: %s', set_heat)
             # Standard device json is returned after setting
             self.device.handle_device_json(set_heat['device'])
 
@@ -577,7 +543,6 @@ class EightUser(object):
         if trends is None:
             _LOGGER.error('Unable to fetch eight trend data.')
         else:
-            # _LOGGER.debug('Trend Result: %s', trends)
             self.trends = trends['days']
 
     @asyncio.coroutine
@@ -589,5 +554,4 @@ class EightUser(object):
         if intervals is None:
             _LOGGER.error('Unable to fetch eight intervals data.')
         else:
-            # _LOGGER.debug('Intervals Result: %s', intervals)
             self.intervals = intervals['intervals']
