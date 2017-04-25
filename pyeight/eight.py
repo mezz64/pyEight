@@ -172,7 +172,7 @@ class EightSleep(object):
         exp_delta = datetime.strptime(self._expdate, '%Y-%m-%dT%H:%M:%S.%fZ') \
             - datetime.fromtimestamp(time.time())
         # Renew 1hr before expiration
-        if exp_delta < 3600:
+        if exp_delta.total_seconds() < 3600:
             _LOGGER.debug('Fetching new access token before expiration.')
             yield from self.fetch_token()
 
