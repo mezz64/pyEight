@@ -169,16 +169,17 @@ class EightSleep(object):
         tmp = None
         tmp2 = None
         for user in self.users:
-            if user.current_values['processing']:
+            obj = self.users[user]
+            if obj.current_values['processing']:
                 if tmp is None:
-                    tmp = user.current_values['room_temp']
+                    tmp = obj.current_values['room_temp']
                 else:
-                    tmp = (tmp + user.current_values['room_temp']) / 2
+                    tmp = (tmp + obj.current_values['room_temp']) / 2
             else:
                 if tmp2 is None:
-                    tmp2 = user.current_values['room_temp']
+                    tmp2 = obj.current_values['room_temp']
                 else:
-                    tmp2 = (tmp2 + user.current_values['room_temp']) / 2
+                    tmp2 = (tmp2 + obj.current_values['room_temp']) / 2
 
         if tmp is not None:
             return tmp
