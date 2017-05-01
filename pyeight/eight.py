@@ -105,8 +105,13 @@ class EightSleep(object):
     def start(self):
         """Start api initialization."""
         yield from self.fetch_token()
-        yield from self.fetch_device_list()
-        yield from self.assign_users()
+        if self._token is not None:
+            yield from self.fetch_device_list()
+            yield from self.assign_users()
+            return True
+        else:
+            # We couldn't authenticate
+            return False
 
     @asyncio.coroutine
     def stop(self):
@@ -122,7 +127,7 @@ class EightSleep(object):
 
         reg = yield from self.api_post(url, None, payload)
         if reg is None:
-            _LOGGER.error('Unable to fetch eight token.')
+            _LOGGER.error('Unable to authenticate and fetch eight token.')
         else:
             self._userid = reg['session']['userId']
             self._token = reg['session']['token']
@@ -157,6 +162,28 @@ class EightSleep(object):
             if self._partner:
                 self.users[data['result']['rightUserId']] = \
                     EightUser(self, data['result']['rightUserId'], 'right')
+
+    def room_temperature(self):
+        """Return room temperature for both sides of bed."""
+        # Check which side is active, if both are return the average
+        tmp = None
+        tmp2 = None
+        for user in self.users:
+            if user.current_values['processing']:
+                if tmp is None:
+                    tmp = user.current_values['room_temp']
+                else:
+                    tmp = (tmp + user.current_values['room_temp']) / 2
+            else:
+                if tmp2 is None:
+                    tmp2 = user.current_values['room_temp']
+                else:
+                    tmp2 = (tmp2 + user.current_values['room_temp']) / 2
+
+        if tmp is not None:
+            return tmp
+        elif tmp2 is not None:
+            return tmp2
 
     def handle_device_json(self, data):
         """Manage the device json list."""
