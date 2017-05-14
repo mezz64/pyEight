@@ -157,9 +157,15 @@ class EightSleep(object):
         if data is None:
             _LOGGER.error('Unable to assign eight device users.')
         else:
-            self.users[data['result']['leftUserId']] = \
-                EightUser(self, data['result']['leftUserId'], 'left')
-            if self._partner:
+            try:
+                self.users[data['result']['leftUserId']] = \
+                    EightUser(self, data['result']['leftUserId'], 'left')
+                if self._partner:
+                    self.users[data['result']['rightUserId']] = \
+                        EightUser(self, data['result']['rightUserId'], 'right')
+            except KeyError:
+                # If we get a key error, most likely a single user on the
+                # other side of the bed
                 self.users[data['result']['rightUserId']] = \
                     EightUser(self, data['result']['rightUserId'], 'right')
 
