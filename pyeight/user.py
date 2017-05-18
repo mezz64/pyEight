@@ -158,7 +158,13 @@ class EightUser(object):
         try:
             stages = self.intervals[0]['stages']
             num_stages = len(stages)
-            stage = stages[num_stages-1]['stage']
+            # API now always has an awake state last in the dict
+            # so always pull the second to last stage while we are
+            # in a processing state
+            if self.current_session_processing:
+                stage = stages[num_stages-2]['stage']
+            else:
+                stage = stages[num_stages-1]['stage']
 
             # Check sleep stage against last_seen time to make
             # sure we don't get stuck in a non-awake state.
@@ -459,9 +465,9 @@ class EightUser(object):
                     self.presence = True
             elif self.heating_level > 25:
                 # Catch rising edge
-                if self.past_heating_level(0) - self.past_heating_level(1) >= 0 \
-                    and self.past_heating_level(1) - self.past_heating_level(2) >= 0 \
-                        and self.past_heating_level(2) - self.past_heating_level(3) >= 0:
+                if self.past_heating_level(0) - self.past_heating_level(1) >= 2 \
+                    and self.past_heating_level(1) - self.past_heating_level(2) >= 2 \
+                        and self.past_heating_level(2) - self.past_heating_level(3) >= 2:
                     # Values are increasing so we are likely in bed
                     if not self.now_heating:
                         self.presence = True
