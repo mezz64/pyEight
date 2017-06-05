@@ -158,6 +158,10 @@ class EightUser(object):
         try:
             stages = self.intervals[0]['stages']
             num_stages = len(stages)
+
+            if num_stages == 0:
+                return None
+
             # API now always has an awake state last in the dict
             # so always pull the second to last stage while we are
             # in a processing state
@@ -209,6 +213,10 @@ class EightUser(object):
         try:
             bedtemps = self.intervals[0]['timeseries']['tempBedC']
             num_temps = len(bedtemps)
+
+            if num_temps == 0:
+                return None
+
             bedtemp = bedtemps[num_temps-1][1]
         except KeyError:
             bedtemp = None
@@ -220,6 +228,10 @@ class EightUser(object):
         try:
             rmtemps = self.intervals[0]['timeseries']['tempRoomC']
             num_temps = len(rmtemps)
+
+            if num_temps == 0:
+                return None
+
             rmtemp = rmtemps[num_temps-1][1]
         except KeyError:
             rmtemp = None
@@ -240,6 +252,10 @@ class EightUser(object):
         try:
             rates = self.intervals[0]['timeseries']['respiratoryRate']
             num_rates = len(rates)
+
+            if num_rates == 0:
+                return None
+
             rate = rates[num_rates-1][1]
         except KeyError:
             rate = None
@@ -251,6 +267,10 @@ class EightUser(object):
         try:
             rates = self.intervals[0]['timeseries']['heartRate']
             num_rates = len(rates)
+
+            if num_rates == 0:
+                return None
+
             rate = rates[num_rates-1][1]
         except KeyError:
             rate = None
@@ -331,6 +351,10 @@ class EightUser(object):
             return None
         tmp = 0
         num_temps = len(bedtemps)
+
+        if num_temps == 0:
+            return None
+
         for temp in bedtemps:
             tmp += temp[1]
         bedtemp = tmp/num_temps
@@ -345,6 +369,10 @@ class EightUser(object):
             return None
         tmp = 0
         num_temps = len(rmtemps)
+
+        if num_temps == 0:
+            return None
+
         for temp in rmtemps:
             tmp += temp[1]
         rmtemp = tmp/num_temps
@@ -368,6 +396,10 @@ class EightUser(object):
             return None
         tmp = 0
         num_rates = len(rates)
+
+        if num_rates == 0:
+            return None
+
         for rate in rates:
             tmp += rate[1]
         rateavg = tmp/num_rates
@@ -382,6 +414,10 @@ class EightUser(object):
             return None
         tmp = 0
         num_rates = len(rates)
+
+        if num_rates == 0:
+            return None
+
         for rate in rates:
             tmp += rate[1]
         rateavg = tmp/num_rates
