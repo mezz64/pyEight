@@ -16,12 +16,12 @@ from distutils.core import setup
 setup(
     name='pyEight',
     packages=['pyeight'],
-    version='0.0.6',
+    version='0.0.7',
     description='Provides a python api to interact with an Eight Sleep mattress cover.',
     author='John Mihalic',
     author_email='mezz64@users.noreply.github.com',
     url='https://github.com/mezz64/pyEight',
-    download_url='https://github.com/mezz64/pyeight/tarball/0.0.6',
+    download_url='https://github.com/mezz64/pyeight/tarball/0.0.7',
     keywords=['eight', 'eightsleep', 'eight sleep', 'sleep', 'mattress', 'api wrapper', 'homeassistant'],
     classifiers=[],
     )
