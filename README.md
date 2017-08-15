@@ -1,3 +1,5 @@
+[![PyPI](https://img.shields.io/pypi/v/pyEight.svg)](https://pypi.python.org/pypi/pyEight)
+
 # Introduction
 Python library to interface with the Eight Sleep API
 
