@@ -170,13 +170,15 @@ class EightUser(object):
             else:
                 stage = stages[num_stages-1]['stage']
 
+            # UNRELIABLE... Removing for now.
             # Check sleep stage against last_seen time to make
             # sure we don't get stuck in a non-awake state.
-            delta_elap = datetime.fromtimestamp(time.time()) \
-                - datetime.strptime(self.last_seen, '%Y-%m-%dT%H:%M:%S')
-            if stage != 'awake' and delta_elap.total_seconds() > 1800:
+            #delta_elap = datetime.fromtimestamp(time.time()) \
+            #    - datetime.strptime(self.last_seen, '%Y-%m-%dT%H:%M:%S')
+            #_LOGGER.debug('User elap: %s', delta_elap.total_seconds())
+            #if stage != 'awake' and delta_elap.total_seconds() > 1800:
                 # Bed hasn't seen us for 30min so set awake.
-                stage = 'awake'
+            #    stage = 'awake'
         except KeyError:
             stage = None
         return stage
