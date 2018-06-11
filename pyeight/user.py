@@ -2,7 +2,7 @@
 pyeight.user
 ~~~~~~~~~~~~~~~~~~~~
 Provides user data for Eight Sleep
-Copyright (c) 2017 John Mihalic <https://github.com/mezz64>
+Copyright (c) 2017-2018 John Mihalic <https://github.com/mezz64>
 Licensed under the MIT license.
 
 """
@@ -104,6 +104,10 @@ class EightUser(object):
     @property
     def last_seen(self):
         """Return mattress last seen time."""
+        """
+        These values seem to be rarely updated correctly in the API.
+        Don't expect accurate results from this property.
+        """
         try:
             if self.side == 'left':
                 lastseen = self.device.device_data['leftPresenceEnd']
@@ -197,7 +201,7 @@ class EightUser(object):
         """Return durations of sleep stages for in-progress session."""
         try:
             stages = self.intervals[0]['stages']
-            breakdown = {'awake': 0, 'light': 0, 'deep': 0}
+            breakdown = {'awake': 0, 'light': 0, 'deep': 0, 'rem': 0}
             for stage in stages:
                 if stage['stage'] == 'awake':
                     breakdown['awake'] += stage['duration']
@@ -205,6 +209,8 @@ class EightUser(object):
                     breakdown['light'] += stage['duration']
                 elif stage['stage'] == 'deep':
                     breakdown['deep'] += stage['duration']
+                elif stage['stage'] == 'rem':
+                    breakdown['rem'] += stage['duration']
         except KeyError:
             breakdown = None
         return breakdown
@@ -334,7 +340,7 @@ class EightUser(object):
         except KeyError:
             return None
 
-        breakdown = {'awake': 0, 'light': 0, 'deep': 0}
+        breakdown = {'awake': 0, 'light': 0, 'deep': 0, 'rem': 0}
         for stage in stages:
             if stage['stage'] == 'awake':
                 breakdown['awake'] += stage['duration']
@@ -342,6 +348,8 @@ class EightUser(object):
                 breakdown['light'] += stage['duration']
             elif stage['stage'] == 'deep':
                 breakdown['deep'] += stage['duration']
+            elif stage['stage'] == 'rem':
+                breakdown['rem'] += stage['duration']
         return breakdown
 
     @property
