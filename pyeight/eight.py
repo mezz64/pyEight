@@ -2,7 +2,7 @@
 pyeight.eight
 ~~~~~~~~~~~~~~~~~~~~
 Provides api for Eight Sleep
-Copyright (c) 2017 John Mihalic <https://github.com/mezz64>
+Copyright (c) 2017-2018 John Mihalic <https://github.com/mezz64>
 Licensed under the MIT license.
 
 """
@@ -157,17 +157,25 @@ class EightSleep(object):
         if data is None:
             _LOGGER.error('Unable to assign eight device users.')
         else:
-            try:
-                self.users[data['result']['leftUserId']] = \
-                    EightUser(self, data['result']['leftUserId'], 'left')
-                if self._partner:
-                    self.users[data['result']['rightUserId']] = \
-                        EightUser(self, data['result']['rightUserId'], 'right')
-            except KeyError:
-                # If we get a key error, most likely a single user on the
-                # other side of the bed
+            # Find the side to the known userid
+            if data['result']['rightUserId'] == self._userid:
                 self.users[data['result']['rightUserId']] = \
                     EightUser(self, data['result']['rightUserId'], 'right')
+                user_side = 'right'
+            elif data['result']['leftUserId'] == self._userid:
+                self.users[data['result']['leftUserId']] = \
+                    EightUser(self, data['result']['leftUserId'], 'left')
+                user_side = 'left'
+            else:
+                _LOGGER.error('Unable to assign eight device users.')
+
+            if self._partner:
+                if user_side == 'right':
+                    self.users[data['result']['leftUserId']] = \
+                        EightUser(self, data['result']['leftUserId'], 'left')
+                else:
+                    self.users[data['result']['rightUserId']] = \
+                        EightUser(self, data['result']['rightUserId'], 'right')
 
     def room_temperature(self):
         """Return room temperature for both sides of bed."""
