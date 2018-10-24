@@ -16,7 +16,7 @@ import async_timeout
 
 from pyeight.user import EightUser
 from pyeight.constants import (
-    DEFAULT_TIMEOUT, DEFAULT_HEADERS, API_URL)
+    DEFAULT_TIMEOUT, DEFAULT_HEADERS, API_URL, __version__)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -104,6 +104,7 @@ class EightSleep(object):
     @asyncio.coroutine
     def start(self):
         """Start api initialization."""
+        _LOGGER.debug('Initializing pyEight Version: %s', __version__)
         yield from self.fetch_token()
         if self._token is not None:
             yield from self.fetch_device_list()
