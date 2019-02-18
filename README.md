@@ -13,6 +13,7 @@ Special thanks to github user @alyc100 for making his SmartThings Eight Sleep co
 
 # Requirements
 
+* python >= 3.5
 * aiohttp >= 2.0
 * asyncio
 * async_timeout
@@ -31,13 +32,13 @@ from pyeight.eight import EightSleep
 
 eight = EightSleep(user, pass, timezone, True, None, loop)
 
-yield from eight.start()
+await eight.start()
 
 # Update mattress data, 1min interval recommended
-yield from eight.update_device_data()
+await eight.update_device_data()
 
 # Update user data, 5min interval recommended
-yield from eight.update_user_data()
+await eight.update_user_data()
 
 ```
 

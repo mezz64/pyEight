@@ -2,7 +2,7 @@
 pyeight.user
 ~~~~~~~~~~~~~~~~~~~~
 Provides user data for Eight Sleep
-Copyright (c) 2017-2018 John Mihalic <https://github.com/mezz64>
+Copyright (c) 2017-2019 John Mihalic <https://github.com/mezz64>
 Licensed under the MIT license.
 
 """
@@ -491,7 +491,6 @@ class EightUser(object):
         # Spearman rank correlation
         # Kendalls Tau
 
-
     def dynamic_presence(self):
         """
         Determine presence based on bed heating level and end presence
@@ -542,20 +541,18 @@ class EightUser(object):
 
         _LOGGER.debug('%s Presence Results: %s', self.side, self.presence)
 
-    @asyncio.coroutine
-    def update_user(self):
+    async def update_user(self):
         """Update all user data."""
-        yield from self.update_intervals_data()
+        await self.update_intervals_data()
 
         # Not using the trends api endpoint for now...
         # now = datetime.today()
         # start = now - timedelta(days=2)
         # end = now + timedelta(days=2)
-        # yield from self.update_trend_data(start.strftime('%Y-%m-%d'),
+        # await self.update_trend_data(start.strftime('%Y-%m-%d'),
         #                                  end.strftime('%Y-%m-%d'))
 
-    @asyncio.coroutine
-    def set_heating_level(self, level, duration=0):
+    async def set_heating_level(self, level, duration=0):
         """Update heating data json."""
         url = '{}/devices/{}'.format(API_URL, self.device.deviceid)
 
@@ -574,15 +571,14 @@ class EightUser(object):
                 'rightTargetHeatingLevel': level
             }
 
-        set_heat = yield from self.device.api_put(url, data)
+        set_heat = await self.device.api_put(url, data)
         if set_heat is None:
             _LOGGER.error('Unable to set eight heating level.')
         else:
             # Standard device json is returned after setting
             self.device.handle_device_json(set_heat['device'])
 
-    @asyncio.coroutine
-    def update_trend_data(self, startdate, enddate):
+    async def update_trend_data(self, startdate, enddate):
         """Update trends data json for specified time period."""
         url = '{}/users/{}/trends'.format(API_URL, self.userid)
         params = {
@@ -591,18 +587,17 @@ class EightUser(object):
             'to': enddate
             }
 
-        trends = yield from self.device.api_get(url, params)
+        trends = await self.device.api_get(url, params)
         if trends is None:
             _LOGGER.error('Unable to fetch eight trend data.')
         else:
             self.trends = trends['days']
 
-    @asyncio.coroutine
-    def update_intervals_data(self):
+    async def update_intervals_data(self):
         """Update intervals data json for specified time period."""
         url = '{}/users/{}/intervals'.format(API_URL, self.userid)
 
-        intervals = yield from self.device.api_get(url)
+        intervals = await self.device.api_get(url)
         if intervals is None:
             _LOGGER.error('Unable to fetch eight intervals data.')
         else:
