@@ -556,8 +556,13 @@ class EightUser(object):
         """Update heating data json."""
         url = '{}/devices/{}'.format(API_URL, self.device.deviceid)
 
-        # Catch bad inputs
-        level = 10 if level < 10 else level
+        # Catch bad low inputs
+        if self.device.is_pod():
+            level = -100 if level < -100 else level
+        else:
+            level = 0 if level < 0 else level
+
+        # Catch bad high inputs
         level = 100 if level > 100 else level
 
         if self.side == 'left':
