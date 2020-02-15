@@ -9,6 +9,7 @@ Licensed under the MIT license.
 
 import logging
 from datetime import datetime
+from datetime import timedelta
 import statistics
 import time
 import asyncio
@@ -147,6 +148,16 @@ class EightUser(object):
         return date
 
     @property
+    def current_fitness_session_date(self):
+        """Return date/time for start of last session data."""
+        try:
+            length = len(self.trends['days']) - 1
+            date = self.trends['days'][length]['day']
+        except KeyError:
+            date = None
+        return date
+
+    @property
     def current_session_processing(self):
         """Return processing state of current session."""
         try:
@@ -183,6 +194,11 @@ class EightUser(object):
             #if stage != 'awake' and delta_elap.total_seconds() > 1800:
                 # Bed hasn't seen us for 30min so set awake.
             #    stage = 'awake'
+
+            # Second try at forcing awake using heating level
+            if stage != 'awake' and self.heating_level < 5:
+                stage = 'awake'
+
         except KeyError:
             stage = None
         return stage
@@ -192,6 +208,79 @@ class EightUser(object):
         """Return sleep score for in-progress session."""
         try:
             score = self.intervals[0]['score']
+        except KeyError:
+            score = None
+        return score
+
+    def trend_sleep_score(self, date):
+        """Return trend sleep score for specified date."""
+        days = self.trends['days']
+        for day in days:
+            # _LOGGER.debug("Trend day: %s, Requested day: %s", day['day'], date)
+            if day['day'] == date:
+                try:
+                    score = day['score']
+                except KeyError:
+                    score = None
+                return score
+
+    def sleep_fitness_score(self, date):
+        """Return sleep fitness score for specified date."""
+        days = self.trends['days']
+        for day in days:
+            if day['day'] == date:
+                try:
+                    score = day['sleepFitnessScore']['total']
+                except KeyError:
+                    score = None
+                return score
+
+    @property
+    def current_sleep_fitness_score(self):
+        """Return sleep fitness score for latest session."""
+        try:
+            length = len(self.trends['days']) - 1
+            score = self.trends['days'][length]['sleepFitnessScore']['total']
+        except KeyError:
+            score = None
+        return score
+
+    @property
+    def current_sleep_duration_score(self):
+        """Return sleep duration score for latest session."""
+        try:
+            length = len(self.trends['days']) - 1
+            score = self.trends['days'][length]['sleepFitnessScore']['sleepDurationSeconds']['score']
+        except KeyError:
+            score = None
+        return score
+
+    @property
+    def current_latency_asleep_score(self):
+        """Return latency asleep score for latest session."""
+        try:
+            length = len(self.trends['days']) - 1
+            score = self.trends['days'][length]['sleepFitnessScore']['latencyAsleepSeconds']['score']
+        except KeyError:
+            score = None
+        return score
+
+    @property
+    def current_latency_out_score(self):
+        """Return latency out score for latest session."""
+        try:
+            length = len(self.trends['days']) - 1
+            score = self.trends['days'][length]['sleepFitnessScore']['latencyOutSeconds']['score']
+        except KeyError:
+            score = None
+        return score
+
+    @property
+    def current_wakeup_consistency_score(self):
+        """Return wakeup consistency score for latest session."""
+        try:
+            length = len(self.trends['days']) - 1
+            score = self.trends['days'][length]['sleepFitnessScore']['wakeupConsistency']['score']
         except KeyError:
             score = None
         return score
@@ -298,6 +387,19 @@ class EightUser(object):
             'resp_rate': self.current_resp_rate,
             'heart_rate': self.current_heart_rate,
             'processing': self.current_session_processing,
+        }
+        return current_dict
+
+    @property
+    def current_fitness_values(self):
+        """Return a dict of all the 'current' fitness score parameters."""
+        current_dict = {
+            'date': self.current_fitness_session_date,
+            'score': self.current_sleep_fitness_score,
+            'duration': self.current_sleep_duration_score,
+            'asleep': self.current_latency_asleep_score,
+            'out': self.current_latency_out_score,
+            'wakeup': self.current_wakeup_consistency_score
         }
         return current_dict
 
@@ -545,19 +647,24 @@ class EightUser(object):
         """Update all user data."""
         await self.update_intervals_data()
 
-        # Not using the trends api endpoint for now...
-        # now = datetime.today()
-        # start = now - timedelta(days=2)
-        # end = now + timedelta(days=2)
-        # await self.update_trend_data(start.strftime('%Y-%m-%d'),
-        #                                  end.strftime('%Y-%m-%d'))
+        now = datetime.today()
+        start = now - timedelta(days=2)
+        end = now + timedelta(days=2)
+
+        await self.update_trend_data(start.strftime('%Y-%m-%d'),
+                                     end.strftime('%Y-%m-%d'))
 
     async def set_heating_level(self, level, duration=0):
         """Update heating data json."""
         url = '{}/devices/{}'.format(API_URL, self.device.deviceid)
 
-        # Catch bad inputs
-        level = 10 if level < 10 else level
+        # Catch bad low inputs
+        if self.device.is_pod():
+            level = -100 if level < -100 else level
+        else:
+            level = 0 if level < 0 else level
+
+        # Catch bad high inputs
         level = 100 if level > 100 else level
 
         if self.side == 'left':
@@ -584,14 +691,15 @@ class EightUser(object):
         params = {
             'tz': self.device.tzone,
             'from': startdate,
-            'to': enddate
+            'to': enddate,
+            # 'include-main': 'true'
             }
-
-        trends = await self.device.api_get(url, params)
-        if trends is None:
+        trend_data = await self.device.api_get(url, params)
+        if trend_data is None:
             _LOGGER.error('Unable to fetch eight trend data.')
         else:
-            self.trends = trends['days']
+            # self.trends = trends['days']
+            self.trends = trend_data
 
     async def update_intervals_data(self):
         """Update intervals data json for specified time period."""

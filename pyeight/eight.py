@@ -39,6 +39,7 @@ class EightSleep(object):
         self._token = None
         self._expdate = None
         self._devices = None
+        self._pod = False
 
         # Setup 10 element list
         self._device_json = [None, None, None, None, None,
@@ -64,7 +65,7 @@ class EightSleep(object):
     @property
     def userids(self):
         """Return dict of user ids."""
-        return self._userids
+        return self._userid
 
     @property
     def deviceid(self):
@@ -80,6 +81,11 @@ class EightSleep(object):
     def device_data_history(self):
         """Return full raw device_data json list."""
         return self._device_json
+
+    @property
+    def is_pod(self):
+        """Return if device is a POD."""
+        return self._pod
 
     def fetch_userid(self, side):
         """Return the userid for the specified bed side."""
@@ -133,7 +139,11 @@ class EightSleep(object):
             _LOGGER.error('Unable to fetch eight devices.')
         else:
             self._devices = dlist['user']['devices']
-            _LOGGER.debug('Devices: %s', self._devices)
+
+            if 'cooling' in dlist['user']['features']:
+                self._pod = True
+
+            _LOGGER.debug('Devices: %s, POD: %s', self._devices, self._pod)
 
     async def assign_users(self):
         """Update device properties."""
