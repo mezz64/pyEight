@@ -2,7 +2,7 @@
 pyeight.user
 ~~~~~~~~~~~~~~~~~~~~
 Provides user data for Eight Sleep
-Copyright (c) 2017-2019 John Mihalic <https://github.com/mezz64>
+Copyright (c) 2017-2020 John Mihalic <https://github.com/mezz64>
 Licensed under the MIT license.
 
 """
