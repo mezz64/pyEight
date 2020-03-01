@@ -659,7 +659,7 @@ class EightUser(object):
         url = '{}/devices/{}'.format(API_URL, self.device.deviceid)
 
         # Catch bad low inputs
-        if self.device.is_pod():
+        if self.device.is_pod:
             level = -100 if level < -100 else level
         else:
             level = 0 if level < 0 else level
