@@ -32,6 +32,7 @@ class EightUser(object):
 
         # Variables to do dynamic presence
         self.presence = False
+        self.obv_low = 0
 
     @property
     def bed_presence(self):
@@ -40,7 +41,7 @@ class EightUser(object):
 
     @property
     def target_heating_level(self):
-        """Return target heating level."""
+        """Return target heating/cooling level."""
         try:
             if self.side == 'left':
                 level = self.device.device_data['leftTargetHeatingLevel']
@@ -52,12 +53,15 @@ class EightUser(object):
 
     @property
     def heating_level(self):
-        """Return heating level."""
+        """Return heating/cooling level."""
         try:
             if self.side == 'left':
                 level = self.device.device_data['leftHeatingLevel']
             elif self.side == 'right':
                 level = self.device.device_data['rightHeatingLevel']
+            # Update observed low
+            if level < self.obv_low:
+                self.obv_low = level
             return level
         except TypeError:
             return None
@@ -82,17 +86,35 @@ class EightUser(object):
     def now_heating(self):
         """Return current heating state."""
         try:
-            if self.side == 'left':
-                heat = self.device.device_data['leftNowHeating']
-            elif self.side == 'right':
-                heat = self.device.device_data['rightNowHeating']
-            return heat
+            if self.target_heating_level > 0:
+                if self.side == 'left':
+                    heat = self.device.device_data['leftNowHeating']
+                elif self.side == 'right':
+                    heat = self.device.device_data['rightNowHeating']
+                return heat
+            else:
+                return False
+        except TypeError:
+            return None
+
+    @property
+    def now_cooling(self):
+        """Return current cooling state."""
+        try:
+            if self.target_heating_level < 0:
+                if self.side == 'left':
+                    cool = self.device.device_data['leftNowHeating']
+                elif self.side == 'right':
+                    cool = self.device.device_data['rightNowHeating']
+                return cool
+            else:
+                return False
         except TypeError:
             return None
 
     @property
     def heating_remaining(self):
-        """Return seconds of heat time remaining."""
+        """Return seconds of heat/cool time remaining."""
         try:
             if self.side == 'left':
                 timerem = self.device.device_data['leftHeatingDuration']
@@ -118,7 +140,7 @@ class EightUser(object):
             date = datetime.fromtimestamp(int(lastseen)) \
                 .strftime('%Y-%m-%dT%H:%M:%S')
             return date
-        except TypeError:
+        except (TypeError, KeyError):
             return None
 
     @property
@@ -603,34 +625,75 @@ class EightUser(object):
 
         # self.heating_stats()
 
-        if not self.presence:
-            if self.heating_level > 50:
-                # Can likely make this better
-                if not self.now_heating:
-                    self.presence = True
-                elif self.heating_level - self.target_heating_level >= 8:
-                    self.presence = True
-            elif self.heating_level > 25:
-                # Catch rising edge
-                if self.past_heating_level(0) - self.past_heating_level(1) >= 2 \
-                    and self.past_heating_level(1) - self.past_heating_level(2) >= 2 \
-                        and self.past_heating_level(2) - self.past_heating_level(3) >= 2:
-                    # Values are increasing so we are likely in bed
+        # Method needs to be different for pod since it doesn't rest at 0
+        #  - Working idea is to track the low and adjust the scale so that low is 0
+        #  - Buffer changes while cooling/heating is active
+        level_zero = self.obv_low * (-1)
+        working_level = self.heating_level + level_zero
+        if self.device.is_pod:
+            if not self.presence:
+                if working_level > 50:
+                    if not self.now_cooling and not self.now_heating:
+                        self.presence = True
+                    elif self.target_heating_level > 0:
+                        # Heating
+                        if working_level - self.target_heating_level >= 8:
+                            self.presence = True
+                    elif self.target_heating_level < 0:
+                        # Cooling
+                        if self.heating_level + self.target_heating_level >=8:
+                            self.presence = True
+                elif working_level > 25:
+                    # Catch rising edge
+                    if self.past_heating_level(0) - self.past_heating_level(1) >= 2 \
+                        and self.past_heating_level(1) - self.past_heating_level(2) >= 2 \
+                            and self.past_heating_level(2) - self.past_heating_level(3) >= 2:
+                        # Values are increasing so we are likely in bed
+                        if not self.now_heating:
+                            self.presence = True
+                        elif working_level - self.target_heating_level >= 8:
+                            self.presence = True
+                    
+            elif self.presence:
+                if working_level <= 15:
+                    # Failsafe, very slow
+                    self.presence = False
+                elif working_level < 35: # Threshold is expiremental for now
+                    if self.past_heating_level(0) - self.past_heating_level(1) < 0 \
+                        and self.past_heating_level(1) - self.past_heating_level(2) < 0 \
+                            and self.past_heating_level(2) - self.past_heating_level(3) < 0:
+                        # Values are decreasing so we are likely out of bed
+                        self.presence = False
+        else:
+            # Method for 0 resting state
+            if not self.presence:
+                if self.heating_level > 50:
+                    # Can likely make this better
                     if not self.now_heating:
                         self.presence = True
                     elif self.heating_level - self.target_heating_level >= 8:
                         self.presence = True
+                elif self.heating_level > 25:
+                    # Catch rising edge
+                    if self.past_heating_level(0) - self.past_heating_level(1) >= 2 \
+                        and self.past_heating_level(1) - self.past_heating_level(2) >= 2 \
+                            and self.past_heating_level(2) - self.past_heating_level(3) >= 2:
+                        # Values are increasing so we are likely in bed
+                        if not self.now_heating:
+                            self.presence = True
+                        elif self.heating_level - self.target_heating_level >= 8:
+                            self.presence = True
 
-        elif self.presence:
-            if self.heating_level <= 15:
-                # Failsafe, very slow
-                self.presence = False
-            elif self.heating_level < 50:
-                if self.past_heating_level(0) - self.past_heating_level(1) < 0 \
-                    and self.past_heating_level(1) - self.past_heating_level(2) < 0 \
-                        and self.past_heating_level(2) - self.past_heating_level(3) < 0:
-                    # Values are decreasing so we are likely out of bed
+            elif self.presence:
+                if self.heating_level <= 15:
+                    # Failsafe, very slow
                     self.presence = False
+                elif self.heating_level < 50:
+                    if self.past_heating_level(0) - self.past_heating_level(1) < 0 \
+                        and self.past_heating_level(1) - self.past_heating_level(2) < 0 \
+                            and self.past_heating_level(2) - self.past_heating_level(3) < 0:
+                        # Values are decreasing so we are likely out of bed
+                        self.presence = False
 
         # Last seen can lag real-time by up to 35min so this is
         # mostly a backup to using the heat values.
