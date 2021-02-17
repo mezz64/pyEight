@@ -23,5 +23,6 @@ setup(
     url='https://github.com/mezz64/pyEight',
     download_url='https://github.com/mezz64/pyeight/tarball/0.1.5',
     keywords=['eight', 'eightsleep', 'eight sleep', 'sleep', 'mattress', 'api wrapper', 'homeassistant'],
+    license='MIT',
     classifiers=[],
     )
