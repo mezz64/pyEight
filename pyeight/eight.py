@@ -22,11 +22,10 @@ _LOGGER = logging.getLogger(__name__)
 
 class EightSleep(object):
     """Eight sleep API object."""
-    def __init__(self, email, password, tzone, api_key=None, client_session=None):
+    def __init__(self, email, password, tzone, client_session=None):
         """Initialize eight sleep class."""
         self._email = email
         self._password = password
-        self._api_key = api_key
 
         self.tzone = tzone
 
