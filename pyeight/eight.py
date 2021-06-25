@@ -11,8 +11,7 @@ import logging
 import asyncio
 from datetime import datetime
 import time
-import aiohttp
-from aiohttp.client import ClientTimeout
+from aiohttp.client import ClientError, ClientSession, ClientTimeout
 
 from pyeight.user import EightUser
 from pyeight.constants import (
@@ -58,7 +57,7 @@ class EightSleep(object):
             self._api_session = client_session
             self._internal_session = False
         else:
-            self._api_session = aiohttp.ClientSession(
+            self._api_session = ClientSession(
                 headers=DEFAULT_HEADERS, loop=self._event_loop)
             self._internal_session = True
 
@@ -243,7 +242,7 @@ class EightSleep(object):
 
             return post_result
 
-        except (aiohttp.ClientError, asyncio.TimeoutError,
+        except (ClientError, asyncio.TimeoutError,
                 ConnectionRefusedError) as err:
             _LOGGER.error('Error posting Eight data. %s', err)
             return None
@@ -270,7 +269,7 @@ class EightSleep(object):
 
             return request_json
 
-        except (aiohttp.ClientError, asyncio.TimeoutError,
+        except (ClientError, asyncio.TimeoutError,
                 ConnectionRefusedError) as err:
             _LOGGER.error('Error fetching Eight data. %s', err)
             return None
@@ -296,7 +295,7 @@ class EightSleep(object):
 
             return put_result
 
-        except (aiohttp.ClientError, asyncio.TimeoutError,
+        except (ClientError, asyncio.TimeoutError,
                 ConnectionRefusedError) as err:
             _LOGGER.error('Error putting Eight data. %s', err)
             return None
