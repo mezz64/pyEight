@@ -30,7 +30,7 @@ Basic Usage
 ```python
 from pyeight.eight import EightSleep
 
-eight = EightSleep(user, pass, timezone, True, None, loop)
+eight = EightSleep(user, pass, timezone, None, None)
 
 await eight.start()
 
