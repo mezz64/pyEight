@@ -12,7 +12,6 @@ from datetime import datetime
 from datetime import timedelta
 import statistics
 import time
-import asyncio
 
 from pyeight.constants import (API_URL)
 
