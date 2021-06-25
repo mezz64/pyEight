@@ -13,6 +13,7 @@ from datetime import datetime
 import time
 import aiohttp
 import async_timeout
+from urllib.parse import urlencode
 
 from pyeight.user import EightUser
 from pyeight.constants import (
@@ -119,7 +120,7 @@ class EightSleep(object):
     async def fetch_token(self):
         """Fetch new session token from api."""
         url = '{}/login'.format(API_URL)
-        payload = 'email={}&password={}'.format(self._email, self._password)
+        payload = urlencode({"email": self._email, "password": self._password})
 
         reg = await self.api_post(url, None, payload)
         if reg is None:
