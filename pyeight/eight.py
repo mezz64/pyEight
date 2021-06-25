@@ -6,7 +6,7 @@ Copyright (c) 2017-2020 John Mihalic <https://github.com/mezz64>
 Licensed under the MIT license.
 
 """
-
+import atexit
 import logging
 import asyncio
 from datetime import datetime
@@ -44,22 +44,14 @@ class EightSleep(object):
         self._device_json = [None, None, None, None, None,
                              None, None, None, None, None]
 
-        if loop is None:
-            _LOGGER.info("Must supply asyncio loop.  Quitting")
-            return None
-        else:
-            self._event_loop = loop
-            self._own_loop = False
-
-        asyncio.set_event_loop(self._event_loop)
-
+        self._api_session = None
         if client_session:
             self._api_session = client_session
             self._internal_session = False
         else:
-            self._api_session = ClientSession(
-                headers=DEFAULT_HEADERS, loop=self._event_loop)
             self._internal_session = True
+            # Stop on exit
+            atexit.register(asyncio.run(self.stop()))
 
     @property
     def token(self):
@@ -106,6 +98,9 @@ class EightSleep(object):
     async def start(self):
         """Start api initialization."""
         _LOGGER.debug('Initializing pyEight Version: %s', __version__)
+        if not self._api_session:
+            self._api_session = ClientSession(headers=DEFAULT_HEADERS)
+
         await self.fetch_token()
         if self._token is not None:
             await self.fetch_device_list()
@@ -118,8 +113,12 @@ class EightSleep(object):
     async def stop(self):
         """Stop api session."""
         if self._internal_session:
-            _LOGGER.debug('Closing eight sleep api session.')
-            await self._api_session.close()
+            if self._api_session:
+                _LOGGER.debug('Closing eight sleep api session.')
+                await self._api_session.close()
+                self._api_session = None
+            else:
+                _LOGGER.debug("No-op because session hasn't been created")
         else:
             _LOGGER.debug('No-op because session is being managed outside of pyEight')
 
