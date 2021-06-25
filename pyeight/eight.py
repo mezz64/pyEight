@@ -41,9 +41,8 @@ class EightSleep(object):
         self._device_json = [None, None, None, None, None,
                              None, None, None, None, None]
 
-        self._api_session = None
-        if client_session:
-            self._api_session = client_session
+        self._api_session = client_session
+        if self._api_session:
             self._internal_session = False
         else:
             self._internal_session = True
