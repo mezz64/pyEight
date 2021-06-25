@@ -25,5 +25,4 @@ setup(
     keywords=['eight', 'eightsleep', 'eight sleep', 'sleep', 'mattress', 'api wrapper', 'homeassistant'],
     license='MIT',
     classifiers=[],
-    install_requires=["aiohttp", "async_timeout"]
     )
