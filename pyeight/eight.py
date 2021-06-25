@@ -112,13 +112,12 @@ class EightSleep(object):
 
     async def stop(self):
         """Stop api session."""
-        if self._internal_session:
-            if self._api_session:
-                _LOGGER.debug('Closing eight sleep api session.')
-                await self._api_session.close()
-                self._api_session = None
-            else:
-                _LOGGER.debug("No-op because session hasn't been created")
+        if self._internal_session and self._api_session:
+            _LOGGER.debug('Closing eight sleep api session.')
+            await self._api_session.close()
+            self._api_session = None
+        elif self._internal_session:
+            _LOGGER.debug("No-op because session hasn't been created")
         else:
             _LOGGER.debug('No-op because session is being managed outside of pyEight')
 
