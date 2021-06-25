@@ -51,7 +51,7 @@ class EightSleep(object):
         else:
             self._internal_session = True
             # Stop on exit
-            atexit.register(asyncio.run(self.stop()))
+            atexit.register(asyncio.run, self.stop())
 
     @property
     def token(self):
