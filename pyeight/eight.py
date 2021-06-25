@@ -42,12 +42,9 @@ class EightSleep(object):
                              None, None, None, None, None]
 
         self._api_session = client_session
-        if self._api_session:
-            self._internal_session = False
-        else:
-            self._internal_session = True
-            # Stop on exit
-            atexit.register(asyncio.run, self.stop())
+        self._internal_session = False
+        # Stop on exit
+        atexit.register(asyncio.run, self.stop())
 
     @property
     def token(self):
@@ -96,6 +93,7 @@ class EightSleep(object):
         _LOGGER.debug('Initializing pyEight Version: %s', __version__)
         if not self._api_session:
             self._api_session = ClientSession(headers=DEFAULT_HEADERS)
+            self._internal_session = True
 
         await self.fetch_token()
         if self._token is not None:
