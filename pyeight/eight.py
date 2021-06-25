@@ -19,6 +19,8 @@ from pyeight.constants import (
 
 _LOGGER = logging.getLogger(__name__)
 
+CLIENT_TIMEOUT = ClientTimeout(total=DEFAULT_TIMEOUT)
+
 
 class EightSleep(object):
     """Eight sleep API object."""
@@ -224,11 +226,7 @@ class EightSleep(object):
         post = None
         try:
             post = await self._api_session.post(
-                url,
-                params=params,
-                data=data,
-                timeout=ClientTimeout(total=DEFAULT_TIMEOUT)
-            )
+                url, params=params, data=data, timeout=CLIENT_TIMEOUT)
             if post.status != 200:
                 _LOGGER.error('Error posting Eight data: %s', post.status)
                 return None
@@ -254,11 +252,7 @@ class EightSleep(object):
 
         try:
             request = await self._api_session.get(
-                url,
-                headers=headers,
-                params=params,
-                timeout=ClientTimeout(total=DEFAULT_TIMEOUT)
-            )
+                url, headers=headers, params=params, timeout=CLIENT_TIMEOUT)
             # _LOGGER.debug('Get URL: %s', request.url)
             if request.status != 200:
                 _LOGGER.error('Error fetching Eight data: %s', request.status)
@@ -285,11 +279,7 @@ class EightSleep(object):
 
         try:
             put = await self._api_session.put(
-                url,
-                headers=headers,
-                data=data,
-                timeout=ClientTimeout(total=DEFAULT_TIMEOUT)
-            )
+                url, headers=headers, data=data, timeout=CLIENT_TIMEOUT)
             if put.status != 200:
                 _LOGGER.error('Error putting Eight data: %s', put.status)
                 return None
