@@ -16,7 +16,7 @@ from distutils.core import setup
 setup(
     name='pyEight',
     packages=['pyeight'],
-    version='0.1.5',
+    version='0.1.6',
     description='Provides a python api to interact with an Eight Sleep mattress cover.',
     author='John Mihalic',
     author_email='mezz64@users.noreply.github.com',

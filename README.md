@@ -16,7 +16,6 @@ Special thanks to github user @alyc100 for making his SmartThings Eight Sleep co
 * python >= 3.5
 * aiohttp >= 2.0
 * asyncio
-* async_timeout
 
 # Installation
 
