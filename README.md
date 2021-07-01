@@ -13,10 +13,9 @@ Special thanks to github user @alyc100 for making his SmartThings Eight Sleep co
 
 # Requirements
 
-* python >= 3.5
+* python >= 3.7
 * aiohttp >= 2.0
 * asyncio
-* async_timeout
 
 # Installation
 
@@ -30,7 +29,7 @@ Basic Usage
 ```python
 from pyeight.eight import EightSleep
 
-eight = EightSleep(user, pass, timezone, True, None, loop)
+eight = EightSleep(user, pass, timezone, None)
 
 await eight.start()
 

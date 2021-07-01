@@ -6,13 +6,12 @@ Copyright (c) 2017-2020 John Mihalic <https://github.com/mezz64>
 Licensed under the MIT license.
 
 """
-
+import atexit
 import logging
 import asyncio
 from datetime import datetime
 import time
-import aiohttp
-import async_timeout
+from aiohttp.client import ClientError, ClientSession, ClientTimeout
 from urllib.parse import urlencode
 
 from pyeight.user import EightUser
@@ -21,16 +20,15 @@ from pyeight.constants import (
 
 _LOGGER = logging.getLogger(__name__)
 
+CLIENT_TIMEOUT = ClientTimeout(total=DEFAULT_TIMEOUT)
+
 
 class EightSleep(object):
     """Eight sleep API object."""
-    def __init__(self, email, password, tzone, partner=False, api_key=None,
-                 loop=None):
+    def __init__(self, email, password, tzone, client_session=None):
         """Initialize eight sleep class."""
         self._email = email
         self._password = password
-        self._partner = partner
-        self._api_key = api_key
 
         self.tzone = tzone
 
@@ -46,17 +44,10 @@ class EightSleep(object):
         self._device_json = [None, None, None, None, None,
                              None, None, None, None, None]
 
-        if loop is None:
-            _LOGGER.info("Must supply asyncio loop.  Quitting")
-            return None
-        else:
-            self._event_loop = loop
-            self._own_loop = False
-
-        asyncio.set_event_loop(self._event_loop)
-
-        self._api_session = aiohttp.ClientSession(
-            headers=DEFAULT_HEADERS, loop=self._event_loop)
+        self._api_session = client_session
+        self._internal_session = False
+        # Stop on exit
+        atexit.register(asyncio.run, self.stop())
 
     @property
     def token(self):
@@ -103,6 +94,10 @@ class EightSleep(object):
     async def start(self):
         """Start api initialization."""
         _LOGGER.debug('Initializing pyEight Version: %s', __version__)
+        if not self._api_session:
+            self._api_session = ClientSession(headers=DEFAULT_HEADERS)
+            self._internal_session = True
+
         await self.fetch_token()
         if self._token is not None:
             await self.fetch_device_list()
@@ -114,8 +109,14 @@ class EightSleep(object):
 
     async def stop(self):
         """Stop api session."""
-        _LOGGER.debug('Closing eight sleep api session.')
-        await self._api_session.close()
+        if self._internal_session and self._api_session:
+            _LOGGER.debug('Closing eight sleep api session.')
+            await self._api_session.close()
+            self._api_session = None
+        elif self._internal_session:
+            _LOGGER.debug("No-op because session hasn't been created")
+        else:
+            _LOGGER.debug('No-op because session is being managed outside of pyEight')
 
     async def fetch_token(self):
         """Fetch new session token from api."""
@@ -156,25 +157,21 @@ class EightSleep(object):
         if data is None:
             _LOGGER.error('Unable to assign eight device users.')
         else:
-            # Find the side to the known userid
-            if data['result']['rightUserId'] == self._userid:
+            # Populate users
+            if data['result'].get('rightUserId'):
                 self.users[data['result']['rightUserId']] = \
                     EightUser(self, data['result']['rightUserId'], 'right')
-                user_side = 'right'
-            elif data['result']['leftUserId'] == self._userid:
+
+            # Check if there's one user
+            if (
+                data['result'].get('leftUserId')
+                and data['result']['leftUserId'] not in self.users
+            ):
                 self.users[data['result']['leftUserId']] = \
                     EightUser(self, data['result']['leftUserId'], 'left')
-                user_side = 'left'
-            else:
-                _LOGGER.error('Unable to assign eight device users.')
 
-            if self._partner:
-                if user_side == 'right':
-                    self.users[data['result']['leftUserId']] = \
-                        EightUser(self, data['result']['leftUserId'], 'left')
-                else:
-                    self.users[data['result']['rightUserId']] = \
-                        EightUser(self, data['result']['rightUserId'], 'right')
+            if not self.users:
+                _LOGGER.error('Unable to assign eight device users.')
 
     def room_temperature(self):
         """Return room temperature for both sides of bed."""
@@ -229,9 +226,8 @@ class EightSleep(object):
         """Make api post request."""
         post = None
         try:
-            with async_timeout.timeout(DEFAULT_TIMEOUT, loop=self._event_loop):
-                post = await self._api_session.post(
-                    url, params=params, data=data)
+            post = await self._api_session.post(
+                url, params=params, data=data, timeout=CLIENT_TIMEOUT)
             if post.status != 200:
                 _LOGGER.error('Error posting Eight data: %s', post.status)
                 return None
@@ -244,7 +240,7 @@ class EightSleep(object):
 
             return post_result
 
-        except (aiohttp.ClientError, asyncio.TimeoutError,
+        except (ClientError, asyncio.TimeoutError,
                 ConnectionRefusedError) as err:
             _LOGGER.error('Error posting Eight data. %s', err)
             return None
@@ -256,9 +252,8 @@ class EightSleep(object):
         headers.update({'Session-Token': self._token})
 
         try:
-            with async_timeout.timeout(DEFAULT_TIMEOUT, loop=self._event_loop):
-                request = await self._api_session.get(
-                    url, headers=headers, params=params)
+            request = await self._api_session.get(
+                url, headers=headers, params=params, timeout=CLIENT_TIMEOUT)
             # _LOGGER.debug('Get URL: %s', request.url)
             if request.status != 200:
                 _LOGGER.error('Error fetching Eight data: %s', request.status)
@@ -272,7 +267,7 @@ class EightSleep(object):
 
             return request_json
 
-        except (aiohttp.ClientError, asyncio.TimeoutError,
+        except (ClientError, asyncio.TimeoutError,
                 ConnectionRefusedError) as err:
             _LOGGER.error('Error fetching Eight data. %s', err)
             return None
@@ -284,9 +279,8 @@ class EightSleep(object):
         headers.update({'Session-Token': self._token})
 
         try:
-            with async_timeout.timeout(DEFAULT_TIMEOUT, loop=self._event_loop):
-                put = await self._api_session.put(
-                    url, headers=headers, data=data)
+            put = await self._api_session.put(
+                url, headers=headers, data=data, timeout=CLIENT_TIMEOUT)
             if put.status != 200:
                 _LOGGER.error('Error putting Eight data: %s', put.status)
                 return None
@@ -299,7 +293,7 @@ class EightSleep(object):
 
             return put_result
 
-        except (aiohttp.ClientError, asyncio.TimeoutError,
+        except (ClientError, asyncio.TimeoutError,
                 ConnectionRefusedError) as err:
             _LOGGER.error('Error putting Eight data. %s', err)
             return None
