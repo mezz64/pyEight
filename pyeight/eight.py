@@ -95,7 +95,7 @@ class EightSleep(object):
         """Start api initialization."""
         _LOGGER.debug('Initializing pyEight Version: %s', __version__)
         if not self._api_session:
-            self._api_session = ClientSession(headers=DEFAULT_HEADERS)
+            self._api_session = ClientSession()
             self._internal_session = True
 
         await self.fetch_token()
@@ -225,9 +225,14 @@ class EightSleep(object):
     async def api_post(self, url, params=None, data=None):
         """Make api post request."""
         post = None
+        headers = DEFAULT_HEADERS.copy()
+
+        # Only attempt to add the token if we've already retrieved it
+        if self._token is not None:
+            headers.update({'Session-Token': self._token})
         try:
             post = await self._api_session.post(
-                url, params=params, data=data, timeout=CLIENT_TIMEOUT)
+                url, headers=headers, params=params, data=data, timeout=CLIENT_TIMEOUT)
             if post.status != 200:
                 _LOGGER.error('Error posting Eight data: %s', post.status)
                 return None
