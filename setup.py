@@ -1,4 +1,4 @@
-# Copyright (c) 2017-2020 John Mihalic <https://github.com/mezz64>
+# Copyright (c) 2017-2021 John Mihalic <https://github.com/mezz64>
 # Licensed under the MIT license.
 
 # Used this guide to create module
@@ -16,12 +16,12 @@ from distutils.core import setup
 setup(
     name='pyEight',
     packages=['pyeight'],
-    version='0.1.7',
+    version='0.1.8',
     description='Provides a python api to interact with an Eight Sleep mattress cover.',
     author='John Mihalic',
     author_email='mezz64@users.noreply.github.com',
     url='https://github.com/mezz64/pyEight',
-    download_url='https://github.com/mezz64/pyeight/tarball/0.1.7',
+    download_url='https://github.com/mezz64/pyeight/tarball/0.1.8',
     keywords=['eight', 'eightsleep', 'eight sleep', 'sleep', 'mattress', 'api wrapper', 'homeassistant'],
     license='MIT',
     classifiers=[],
