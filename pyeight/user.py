@@ -164,7 +164,7 @@ class EightUser(object):
             offset = datetime.fromtimestamp(now) \
                 - datetime.utcfromtimestamp(now)
             date = date_f + offset
-        except KeyError:
+        except (IndexError, KeyError):
             date = None
         return date
 
@@ -174,7 +174,7 @@ class EightUser(object):
         try:
             length = len(self.trends['days']) - 1
             date = self.trends['days'][length]['day']
-        except KeyError:
+        except (IndexError, KeyError):
             date = None
         return date
 
@@ -183,7 +183,7 @@ class EightUser(object):
         """Return processing state of current session."""
         try:
             incomplete = self.intervals[0]['incomplete']
-        except KeyError:
+        except (IndexError, KeyError):
             # No incomplete key, not processing
             incomplete = False
         return incomplete
@@ -220,7 +220,7 @@ class EightUser(object):
             if stage != 'awake' and self.heating_level < 5:
                 stage = 'awake'
 
-        except KeyError:
+        except (IndexError, KeyError):
             stage = None
         return stage
 
@@ -229,7 +229,7 @@ class EightUser(object):
         """Return sleep score for in-progress session."""
         try:
             score = self.intervals[0]['score']
-        except KeyError:
+        except (IndexError, KeyError):
             score = None
         return score
 
@@ -241,7 +241,7 @@ class EightUser(object):
             if day['day'] == date:
                 try:
                     score = day['score']
-                except KeyError:
+                except (IndexError, KeyError):
                     score = None
                 return score
 
@@ -252,7 +252,7 @@ class EightUser(object):
             if day['day'] == date:
                 try:
                     score = day['sleepFitnessScore']['total']
-                except KeyError:
+                except (IndexError, KeyError):
                     score = None
                 return score
 
@@ -262,7 +262,7 @@ class EightUser(object):
         try:
             length = len(self.trends['days']) - 1
             score = self.trends['days'][length]['sleepFitnessScore']['total']
-        except KeyError:
+        except (IndexError, KeyError):
             score = None
         return score
 
@@ -272,7 +272,7 @@ class EightUser(object):
         try:
             length = len(self.trends['days']) - 1
             score = self.trends['days'][length]['sleepFitnessScore']['sleepDurationSeconds']['score']
-        except KeyError:
+        except (IndexError, KeyError):
             score = None
         return score
 
@@ -282,7 +282,7 @@ class EightUser(object):
         try:
             length = len(self.trends['days']) - 1
             score = self.trends['days'][length]['sleepFitnessScore']['latencyAsleepSeconds']['score']
-        except KeyError:
+        except (IndexError, KeyError):
             score = None
         return score
 
@@ -292,7 +292,7 @@ class EightUser(object):
         try:
             length = len(self.trends['days']) - 1
             score = self.trends['days'][length]['sleepFitnessScore']['latencyOutSeconds']['score']
-        except KeyError:
+        except (IndexError, KeyError):
             score = None
         return score
 
@@ -302,7 +302,7 @@ class EightUser(object):
         try:
             length = len(self.trends['days']) - 1
             score = self.trends['days'][length]['sleepFitnessScore']['wakeupConsistency']['score']
-        except KeyError:
+        except (IndexError, KeyError):
             score = None
         return score
 
@@ -321,7 +321,7 @@ class EightUser(object):
                     breakdown['deep'] += stage['duration']
                 elif stage['stage'] == 'rem':
                     breakdown['rem'] += stage['duration']
-        except KeyError:
+        except (IndexError, KeyError):
             breakdown = None
         return breakdown
 
@@ -336,7 +336,7 @@ class EightUser(object):
                 return None
 
             bedtemp = bedtemps[num_temps-1][1]
-        except KeyError:
+        except (IndexError, KeyError):
             bedtemp = None
         return bedtemp
 
@@ -351,7 +351,7 @@ class EightUser(object):
                 return None
 
             rmtemp = rmtemps[num_temps-1][1]
-        except KeyError:
+        except (IndexError, KeyError):
             rmtemp = None
         return rmtemp
 
@@ -360,7 +360,7 @@ class EightUser(object):
         """Return current toss & turns for in-progress session."""
         try:
             tnt = len(self.intervals[0]['timeseries']['tnt'])
-        except KeyError:
+        except (IndexError, KeyError):
             tnt = None
         return tnt
 
@@ -375,7 +375,7 @@ class EightUser(object):
                 return None
 
             rate = rates[num_rates-1][1]
-        except KeyError:
+        except (IndexError, KeyError):
             rate = None
         return rate
 
@@ -390,7 +390,7 @@ class EightUser(object):
                 return None
 
             rate = rates[num_rates-1][1]
-        except KeyError:
+        except (IndexError, KeyError):
             rate = None
         return rate
 
@@ -429,7 +429,7 @@ class EightUser(object):
         """Return date/time for start of last session data."""
         try:
             date = self.intervals[1]['ts']
-        except KeyError:
+        except (IndexError, KeyError):
             return None
         date_f = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ')
         now = time.time()
@@ -441,7 +441,7 @@ class EightUser(object):
         """Return processing state of current session."""
         try:
             incomplete = self.intervals[1]['incomplete']
-        except KeyError:
+        except (IndexError, KeyError):
             # No incomplete key, not processing
             incomplete = False
         return incomplete
@@ -451,7 +451,7 @@ class EightUser(object):
         """Return sleep score from last complete sleep session."""
         try:
             score = self.intervals[1]['score']
-        except KeyError:
+        except (IndexError, KeyError):
             score = None
         return score
 
@@ -460,7 +460,7 @@ class EightUser(object):
         """Return durations of sleep stages for last complete session."""
         try:
             stages = self.intervals[1]['stages']
-        except KeyError:
+        except (IndexError, KeyError):
             return None
 
         breakdown = {'awake': 0, 'light': 0, 'deep': 0, 'rem': 0}
@@ -480,7 +480,7 @@ class EightUser(object):
         """Return avg bed temperature for last session."""
         try:
             bedtemps = self.intervals[1]['timeseries']['tempBedC']
-        except KeyError:
+        except (IndexError, KeyError):
             return None
         tmp = 0
         num_temps = len(bedtemps)
@@ -498,7 +498,7 @@ class EightUser(object):
         """Return avg room temperature for last session."""
         try:
             rmtemps = self.intervals[1]['timeseries']['tempRoomC']
-        except KeyError:
+        except (IndexError, KeyError):
             return None
         tmp = 0
         num_temps = len(rmtemps)
@@ -516,7 +516,7 @@ class EightUser(object):
         """Return toss & turns for last session."""
         try:
             tnt = len(self.intervals[1]['timeseries']['tnt'])
-        except KeyError:
+        except (IndexError, KeyError):
             return None
         return tnt
 
@@ -525,7 +525,7 @@ class EightUser(object):
         """Return avg respiratory rate for last session."""
         try:
             rates = self.intervals[1]['timeseries']['respiratoryRate']
-        except KeyError:
+        except (IndexError, KeyError):
             return None
         tmp = 0
         num_rates = len(rates)
@@ -543,7 +543,7 @@ class EightUser(object):
         """Return avg heart rate for last session."""
         try:
             rates = self.intervals[1]['timeseries']['heartRate']
-        except KeyError:
+        except (IndexError, KeyError):
             return None
         tmp = 0
         num_rates = len(rates)
