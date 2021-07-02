@@ -123,7 +123,7 @@ class EightSleep(object):
         url = '{}/login'.format(API_URL)
         payload = urlencode({"email": self._email, "password": self._password})
 
-        reg = await self.api_post(url, None, payload)
+        reg = await self.api_post(url, None, payload, include_token=False)
         if reg is None:
             _LOGGER.error('Unable to authenticate and fetch eight token.')
         else:
@@ -222,13 +222,14 @@ class EightSleep(object):
             for user in self.users:
                 self.users[user].dynamic_presence()
 
-    async def api_post(self, url, params=None, data=None):
+    async def api_post(self, url, params=None, data=None, include_token=True):
         """Make api post request."""
         post = None
         headers = DEFAULT_HEADERS.copy()
 
-        # Only attempt to add the token if we've already retrieved it
-        if self._token is not None:
+        # Only attempt to add the token if we've already retrieved it and if the caller
+        # wants us to
+        if self._token is not None and include_token:
             headers.update({'Session-Token': self._token})
         try:
             post = await self._api_session.post(

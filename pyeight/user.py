@@ -25,6 +25,7 @@ class EightUser(object):
         self.device = device
         self.userid = userid
         self.side = side
+        self._user_profile = None
 
         self.trends = None
         self.intervals = None
@@ -32,6 +33,11 @@ class EightUser(object):
         # Variables to do dynamic presence
         self.presence = False
         self.obv_low = 0
+
+    @property
+    def user_profile(self):
+        """Return userdata."""
+        return self._user_profile
 
     @property
     def bed_presence(self):
@@ -707,6 +713,7 @@ class EightUser(object):
 
     async def update_user(self):
         """Update all user data."""
+        await self.update_user_profile()
         await self.update_intervals_data()
 
         now = datetime.today()
@@ -746,6 +753,15 @@ class EightUser(object):
         else:
             # Standard device json is returned after setting
             self.device.handle_device_json(set_heat['device'])
+
+    async def update_user_profile(self):
+        """Update user profile data."""
+        url = '{}/users/{}'.format(API_URL, self.userid)
+        profile_data = await self.device.api_get(url)
+        if profile_data is None:
+            _LOGGER.error('Unable to fetch user profile data for %s', self.userid)
+        else:
+            self._user_profile = profile_data["user"]
 
     async def update_trend_data(self, startdate, enddate):
         """Update trends data json for specified time period."""
