@@ -47,7 +47,17 @@ class EightSleep(object):
         self._api_session = client_session
         self._internal_session = False
         # Stop on exit
-        atexit.register(asyncio.run, self.stop())
+        atexit.register(self.at_exit)
+
+    def at_exit(self):
+        """Run at exit."""
+        try:
+            loop = asyncio.get_running_loop()
+            asyncio.run_coroutine_threadsafe(
+                self.stop(), loop
+            ).result()
+        except RuntimeError:
+            asyncio.run(self.stop())
 
     @property
     def token(self):
