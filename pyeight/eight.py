@@ -52,8 +52,9 @@ class EightSleep(object):
     def at_exit(self):
         """Run at exit."""
         try:
+            loop = asyncio.get_running_loop()
             asyncio.run_coroutine_threadsafe(
-                self.stop(), asyncio.get_running_loop()
+                self.stop(), loop
             ).result()
         except RuntimeError:
             asyncio.run(self.stop())
@@ -168,16 +169,18 @@ class EightSleep(object):
         else:
             # Populate users
             if data['result'].get('rightUserId'):
-                self.users[data['result']['rightUserId']] = \
+                user = self.users[data['result']['rightUserId']] = \
                     EightUser(self, data['result']['rightUserId'], 'right')
+                await user.update_user_profile()
 
             # Check if there's one user
             if (
                 data['result'].get('leftUserId')
                 and data['result']['leftUserId'] not in self.users
             ):
-                self.users[data['result']['leftUserId']] = \
+                user = self.users[data['result']['leftUserId']] = \
                     EightUser(self, data['result']['leftUserId'], 'left')
+                await user.update_user_profile()
 
             if not self.users:
                 _LOGGER.error('Unable to assign eight device users.')

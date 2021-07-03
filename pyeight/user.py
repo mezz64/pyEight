@@ -713,7 +713,6 @@ class EightUser(object):
 
     async def update_user(self):
         """Update all user data."""
-        await self.update_user_profile()
         await self.update_intervals_data()
 
         now = datetime.today()
