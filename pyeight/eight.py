@@ -203,7 +203,7 @@ class EightSleep(object):
 
     async def update_device_data(self):
         """Update device data json."""
-        url = '{}/devices/{}?offlineView=true'.format(API_URL, self.deviceid)
+        url = '{}/devices/{}'.format(API_URL, self.deviceid)
 
         # Check for access token expiration (every 15days)
         exp_delta = datetime.strptime(self._expdate, '%Y-%m-%dT%H:%M:%S.%fZ') \
