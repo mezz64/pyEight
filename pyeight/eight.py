@@ -52,9 +52,8 @@ class EightSleep(object):
     def at_exit(self):
         """Run at exit."""
         try:
-            loop = asyncio.get_running_loop()
             asyncio.run_coroutine_threadsafe(
-                self.stop(), loop
+                self.stop(), asyncio.get_running_loop()
             ).result()
         except RuntimeError:
             asyncio.run(self.stop())
