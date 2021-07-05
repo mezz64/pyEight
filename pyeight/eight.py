@@ -47,7 +47,17 @@ class EightSleep(object):
         self._api_session = client_session
         self._internal_session = False
         # Stop on exit
-        atexit.register(asyncio.run, self.stop())
+        atexit.register(self.at_exit)
+
+    def at_exit(self):
+        """Run at exit."""
+        try:
+            loop = asyncio.get_running_loop()
+            asyncio.run_coroutine_threadsafe(
+                self.stop(), loop
+            ).result()
+        except RuntimeError:
+            asyncio.run(self.stop())
 
     @property
     def token(self):
@@ -123,7 +133,7 @@ class EightSleep(object):
         url = '{}/login'.format(API_URL)
         payload = urlencode({"email": self._email, "password": self._password})
 
-        reg = await self.api_post(url, None, payload)
+        reg = await self.api_post(url, None, payload, include_token=False)
         if reg is None:
             _LOGGER.error('Unable to authenticate and fetch eight token.')
         else:
@@ -159,16 +169,18 @@ class EightSleep(object):
         else:
             # Populate users
             if data['result'].get('rightUserId'):
-                self.users[data['result']['rightUserId']] = \
+                user = self.users[data['result']['rightUserId']] = \
                     EightUser(self, data['result']['rightUserId'], 'right')
+                await user.update_user_profile()
 
             # Check if there's one user
             if (
                 data['result'].get('leftUserId')
                 and data['result']['leftUserId'] not in self.users
             ):
-                self.users[data['result']['leftUserId']] = \
+                user = self.users[data['result']['leftUserId']] = \
                     EightUser(self, data['result']['leftUserId'], 'left')
+                await user.update_user_profile()
 
             if not self.users:
                 _LOGGER.error('Unable to assign eight device users.')
@@ -203,7 +215,7 @@ class EightSleep(object):
 
     async def update_device_data(self):
         """Update device data json."""
-        url = '{}/devices/{}?offlineView=true'.format(API_URL, self.deviceid)
+        url = '{}/devices/{}'.format(API_URL, self.deviceid)
 
         # Check for access token expiration (every 15days)
         exp_delta = datetime.strptime(self._expdate, '%Y-%m-%dT%H:%M:%S.%fZ') \
@@ -222,13 +234,14 @@ class EightSleep(object):
             for user in self.users:
                 self.users[user].dynamic_presence()
 
-    async def api_post(self, url, params=None, data=None):
+    async def api_post(self, url, params=None, data=None, include_token=True):
         """Make api post request."""
         post = None
         headers = DEFAULT_HEADERS.copy()
 
-        # Only attempt to add the token if we've already retrieved it
-        if self._token is not None:
+        # Only attempt to add the token if we've already retrieved it and if the caller
+        # wants us to
+        if self._token is not None and include_token:
             headers.update({'Session-Token': self._token})
         try:
             post = await self._api_session.post(
