@@ -2,7 +2,7 @@
 pyeight.eight
 ~~~~~~~~~~~~~~~~~~~~
 Provides api for Eight Sleep
-Copyright (c) 2017-2020 John Mihalic <https://github.com/mezz64>
+Copyright (c) 2017-2022 John Mihalic <https://github.com/mezz64>
 Licensed under the MIT license.
 
 """
@@ -131,7 +131,7 @@ class EightSleep(object):
     async def fetch_token(self):
         """Fetch new session token from api."""
         url = '{}/login'.format(API_URL)
-        payload = urlencode({"email": self._email, "password": self._password})
+        payload = {"email": self._email, "password": self._password}
 
         reg = await self.api_post(url, None, payload, include_token=False)
         if reg is None:
@@ -245,7 +245,7 @@ class EightSleep(object):
             headers.update({'Session-Token': self._token})
         try:
             post = await self._api_session.post(
-                url, headers=headers, params=params, data=data, timeout=CLIENT_TIMEOUT)
+                url, headers=headers, params=params, json=data, timeout=CLIENT_TIMEOUT)
             if post.status != 200:
                 _LOGGER.error('Error posting Eight data: %s', post.status)
                 return None
@@ -298,7 +298,7 @@ class EightSleep(object):
 
         try:
             put = await self._api_session.put(
-                url, headers=headers, data=data, timeout=CLIENT_TIMEOUT)
+                url, headers=headers, json=data, timeout=CLIENT_TIMEOUT)
             if put.status != 200:
                 _LOGGER.error('Error putting Eight data: %s', put.status)
                 return None

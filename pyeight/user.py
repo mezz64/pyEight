@@ -2,7 +2,7 @@
 pyeight.user
 ~~~~~~~~~~~~~~~~~~~~
 Provides user data for Eight Sleep
-Copyright (c) 2017-2020 John Mihalic <https://github.com/mezz64>
+Copyright (c) 2017-2022 John Mihalic <https://github.com/mezz64>
 Licensed under the MIT license.
 
 """
@@ -735,18 +735,24 @@ class EightUser(object):
         # Catch bad high inputs
         level = 100 if level > 100 else level
 
+        # Duration requests can fail when a schedule is active
+        # so form two payloads to ensure level settings succeed
         if self.side == 'left':
-            data = {
-                'leftHeatingDuration': duration,
-                'leftTargetHeatingLevel': level
-            }
+            data_duration = {"leftHeatingDuration": duration}
+            data_level = {"leftTargetHeatingLevel": level}
         elif self.side == 'right':
-            data = {
-                'rightHeatingDuration': duration,
-                'rightTargetHeatingLevel': level
-            }
+            data_duration = {"rightHeatingDuration": duration}
+            data_level = {"rightTargetHeatingLevel": level}
 
-        set_heat = await self.device.api_put(url, data)
+        # Send duration first otherwise the level request will do nothing
+        set_heat = await self.device.api_put(url, data_duration)
+        if set_heat is None:
+            _LOGGER.error('Unable to set eight heating duration.')
+        else:
+            # Standard device json is returned after setting
+            self.device.handle_device_json(set_heat['device'])
+
+        set_heat = await self.device.api_put(url, data_level)
         if set_heat is None:
             _LOGGER.error('Unable to set eight heating level.')
         else:
