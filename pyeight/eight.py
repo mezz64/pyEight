@@ -14,8 +14,8 @@ import time
 
 from aiohttp.client import ClientError, ClientSession, ClientTimeout
 
-from pyeight.constants import API_URL, DEFAULT_HEADERS, DEFAULT_TIMEOUT, __version__
-from pyeight.user import EightUser
+from .constants import API_URL, DEFAULT_HEADERS, DEFAULT_TIMEOUT, __version__
+from .user import EightUser
 
 _LOGGER = logging.getLogger(__name__)
 

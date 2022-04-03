@@ -12,7 +12,7 @@ import logging
 import statistics
 import time
 
-from pyeight.constants import API_URL
+from .constants import API_URL
 
 _LOGGER = logging.getLogger(__name__)
 
