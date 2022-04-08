@@ -9,18 +9,17 @@ Licensed under the MIT license.
 MAJOR_VERSION = 0
 MINOR_VERSION = 2
 SUB_MINOR_VERSION = 0
-__version__ = '{}.{}.{}'.format(
-    MAJOR_VERSION, MINOR_VERSION, SUB_MINOR_VERSION)
+__version__ = "{}.{}.{}".format(MAJOR_VERSION, MINOR_VERSION, SUB_MINOR_VERSION)
 
-API_URL = 'https://client-api.8slp.net/v1'
+API_URL = "https://client-api.8slp.net/v1"
 
 DEFAULT_TIMEOUT = 240
 
 DEFAULT_HEADERS = {
-    'content-type': "application/json",
-    'connection': "keep-alive",
-    'user-agent': "okhttp/4.9.1",
-    'accept-encoding': "gzip",
-    'accept': "application/json",
-    'authority': "client-api.8slp.net",
-    }
+    "content-type": "application/json",
+    "connection": "keep-alive",
+    "user-agent": "okhttp/4.9.1",
+    "accept-encoding": "gzip",
+    "accept": "application/json",
+    "authority": "client-api.8slp.net",
+}

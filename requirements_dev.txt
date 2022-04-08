@@ -1,0 +1,4 @@
+-r requirements.txt
+-r requirements_lint.txt
+
+-e .
