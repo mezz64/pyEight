@@ -17,7 +17,7 @@ from .constants import API_URL
 _LOGGER = logging.getLogger(__name__)
 
 
-class EightUser(object):
+class EightUser:  # pylint: disable=too-many-public-methods
     """Class for handling data of each eight user."""
 
     def __init__(self, device, userid, side):
@@ -95,8 +95,7 @@ class EightUser(object):
                 elif self.side == "right":
                     heat = self.device.device_data["rightNowHeating"]
                 return heat
-            else:
-                return False
+            return False
         except TypeError:
             return None
 
@@ -110,8 +109,7 @@ class EightUser(object):
                 elif self.side == "right":
                     cool = self.device.device_data["rightNowHeating"]
                 return cool
-            else:
-                return False
+            return False
         except TypeError:
             return None
 
@@ -129,8 +127,8 @@ class EightUser(object):
 
     @property
     def last_seen(self):
-        """Return mattress last seen time."""
-        """
+        """Return mattress last seen time.
+
         These values seem to be rarely updated correctly in the API.
         Don't expect accurate results from this property.
         """
@@ -242,10 +240,10 @@ class EightUser(object):
             # _LOGGER.debug("Trend day: %s, Requested day: %s", day['day'], date)
             if day["day"] == date:
                 try:
-                    score = day["score"]
+                    return day["score"]
                 except (IndexError, KeyError):
-                    score = None
-                return score
+                    return None
+        return None
 
     def sleep_fitness_score(self, date):
         """Return sleep fitness score for specified date."""
@@ -253,10 +251,10 @@ class EightUser(object):
         for day in days:
             if day["day"] == date:
                 try:
-                    score = day["sleepFitnessScore"]["total"]
+                    return day["sleepFitnessScore"]["total"]
                 except (IndexError, KeyError):
-                    score = None
-                return score
+                    return None
+        return None
 
     @property
     def current_sleep_fitness_score(self):
@@ -616,7 +614,7 @@ class EightUser(object):
             tenvar = statistics.variance(local_10)
             _LOGGER.debug("%s Heating 5 min variance: %s", self.side, fivevar)
             _LOGGER.debug("%s Heating 10 min variance: %s", self.side, tenvar)
-        except:
+        except:  # pylint: disable=bare-except
             _LOGGER.debug("Cant calculate stats yet...")
 
         # Other possible options for exploration....
@@ -737,7 +735,7 @@ class EightUser(object):
 
     async def set_heating_level(self, level, duration=0):
         """Update heating data json."""
-        url = "{}/devices/{}".format(API_URL, self.device.deviceid)
+        url = f"{API_URL}/devices/{self.device.deviceid}"
 
         # Catch bad low inputs
         if self.device.is_pod:
@@ -774,7 +772,7 @@ class EightUser(object):
 
     async def update_user_profile(self):
         """Update user profile data."""
-        url = "{}/users/{}".format(API_URL, self.userid)
+        url = f"{API_URL}/users/{self.userid}"
         profile_data = await self.device.api_get(url)
         if profile_data is None:
             _LOGGER.error("Unable to fetch user profile data for %s", self.userid)
@@ -783,7 +781,7 @@ class EightUser(object):
 
     async def update_trend_data(self, startdate, enddate):
         """Update trends data json for specified time period."""
-        url = "{}/users/{}/trends".format(API_URL, self.userid)
+        url = f"{API_URL}/users/{self.userid}/trends"
         params = {
             "tz": self.device.tzone,
             "from": startdate,
@@ -799,7 +797,7 @@ class EightUser(object):
 
     async def update_intervals_data(self):
         """Update intervals data json for specified time period."""
-        url = "{}/users/{}/intervals".format(API_URL, self.userid)
+        url = f"{API_URL}/users/{self.userid}/intervals"
 
         intervals = await self.device.api_get(url)
         if intervals is None:

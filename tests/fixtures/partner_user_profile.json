@@ -1,0 +1,36 @@
+{
+  "user": {
+    "userId": "e9e8a0c020a1159cc0549e189f6d4a15",
+    "email": "jilldoe@gmail.com",
+    "firstName": "Jill",
+    "lastName": "Doe",
+    "gender": "female",
+    "tempPreference": "hot",
+    "tempPreferenceUpdatedAt": "2021-07-04T04:20:33.558Z",
+    "dob": "2008-06-25T14:23:00.234Z",
+    "zip": 11111,
+    "devices": ["98c53f17408384ffd6329fd1"],
+    "emailVerified": true,
+    "sharingMetricsTo": ["389e711791e70fe16c54ce166ad8f3eb"],
+    "sharingMetricsFrom": ["389e711791e70fe16c54ce166ad8f3eb"],
+    "timezone": "America/New_York",
+    "notifications": {
+      "weeklyReportEmail": true,
+      "sessionProcessed": true,
+      "temperatureRecommendation": true,
+      "healthInsight": true,
+      "sleepInsight": true,
+      "marketingUpdates": true,
+      "bedtimeReminder": true,
+      "alarmWakeupPush": true
+    },
+    "createdAt": "2021-06-25T14:23:37.175Z",
+    "experimentalFeatures": false,
+    "autopilotEnabled": false,
+    "lastReset": "1970-01-01T00:00:00.000Z",
+    "nextReset": "2100-01-01T00:00:00.000Z",
+    "features": ["warming", "cooling"],
+    "currentDevice": { "id": "98c53f17408384ffd6329fd1", "side": "right" },
+    "hotelGuest": false
+  }
+}
