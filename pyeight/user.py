@@ -160,13 +160,9 @@ class EightUser:  # pylint: disable=too-many-public-methods
         """Return date/time for start of last session data."""
         try:
             date = self.intervals[0]["ts"]
-            date_f = datetime.strptime(date, "%Y-%m-%dT%H:%M:%S.%fZ")
-            now = time.time()
-            offset = datetime.fromtimestamp(now) - datetime.utcfromtimestamp(now)
-            date = date_f + offset
+            return datetime.strptime(date, "%Y-%m-%dT%H:%M:%S.%fZ")
         except (IndexError, KeyError):
-            date = None
-        return date
+            return None
 
     @property
     def current_fitness_session_date(self):
@@ -437,12 +433,9 @@ class EightUser:  # pylint: disable=too-many-public-methods
         """Return date/time for start of last session data."""
         try:
             date = self.intervals[1]["ts"]
+            return datetime.strptime(date, "%Y-%m-%dT%H:%M:%S.%fZ")
         except (IndexError, KeyError):
             return None
-        date_f = datetime.strptime(date, "%Y-%m-%dT%H:%M:%S.%fZ")
-        now = time.time()
-        offset = datetime.fromtimestamp(now) - datetime.utcfromtimestamp(now)
-        return date_f + offset
 
     @property
     def last_session_processing(self):
