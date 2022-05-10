@@ -49,4 +49,3 @@ async def client_session_fixture(aiohttp_client):
             "pyeight.user.API_URL", new_url
         ):
             yield session
-
