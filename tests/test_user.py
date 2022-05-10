@@ -13,7 +13,7 @@ async def test_update_user_data(client_session):
     await eight.update_device_data()
     await eight.update_user_data()
 
-    user = next(user for user in eight.users.values())
+    user = eight.users["e9e8a0c020a1159cc0549e189f6d4a15"]
 
     assert user.bed_presence is False
     assert user.target_heating_level == 0
