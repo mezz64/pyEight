@@ -10,8 +10,7 @@ Licensed under the MIT license.
 from datetime import datetime, timedelta
 import logging
 import statistics
-
-import pytz
+from zoneinfo import ZoneInfo
 
 from .constants import API_URL
 
@@ -160,8 +159,8 @@ class EightUser:  # pylint: disable=too-many-public-methods
     def current_session_date(self):
         """Return date/time for start of last session data."""
         try:
-            date = self.intervals[0]["ts"]
-            return pytz.utc.localize(datetime.strptime(date, "%Y-%m-%dT%H:%M:%S.%fZ"))
+            date = datetime.strptime(self.intervals[0]["ts"], "%Y-%m-%dT%H:%M:%S.%fZ")
+            return date.replace(tzinfo=ZoneInfo("UTC"))
         except (IndexError, KeyError):
             return None
 
@@ -434,7 +433,7 @@ class EightUser:  # pylint: disable=too-many-public-methods
         """Return date/time for start of last session data."""
         try:
             date = datetime.strptime(self.intervals[1]["ts"], "%Y-%m-%dT%H:%M:%S.%fZ")
-            return pytz.utc.localize(date)
+            return date.replace(tzinfo=ZoneInfo("UTC"))
         except (IndexError, KeyError):
             return None
 
