@@ -10,11 +10,18 @@ import asyncio
 import atexit
 from datetime import datetime
 import logging
-import time
+from typing import Any, Dict, List, Optional
 
 from aiohttp.client import ClientError, ClientSession, ClientTimeout
 
-from .constants import API_URL, DEFAULT_HEADERS, DEFAULT_TIMEOUT, __version__
+from .constants import (
+    API_URL,
+    DATE_TIME_ISO_FORMAT,
+    DEFAULT_HEADERS,
+    DEFAULT_TIMEOUT,
+    __version__,
+)
+from .exceptions import NotAuthenticatedError, RequestError
 from .user import EightUser
 
 _LOGGER = logging.getLogger(__name__)
@@ -25,30 +32,36 @@ CLIENT_TIMEOUT = ClientTimeout(total=DEFAULT_TIMEOUT)
 class EightSleep:
     """Eight sleep API object."""
 
-    def __init__(self, email, password, tzone, client_session=None):
+    def __init__(
+        self,
+        email: str,
+        password: str,
+        tzone: str,
+        client_session: Optional[ClientSession] = None,
+    ) -> None:
         """Initialize eight sleep class."""
         self._email = email
         self._password = password
 
         self.tzone = tzone
 
-        self.users = {}
+        self.users: Dict[str, EightUser] = {}
 
-        self._userid = None
-        self._token = None
-        self._expdate = None
-        self._devices = None
-        self._pod = False
+        self._user_id: Optional[str] = None
+        self._token: Optional[str] = None
+        self._token_expiration: Optional[datetime] = None
+        self._device_ids: List[str] = []
+        self._is_pod: bool = False
 
         # Setup 10 element list
-        self._device_json = [None, None, None, None, None, None, None, None, None, None]
+        self._device_json_list: List[Dict] = []
 
         self._api_session = client_session
-        self._internal_session = False
+        self._internal_session: bool = False
         # Stop on exit
         atexit.register(self.at_exit)
 
-    def at_exit(self):
+    def at_exit(self) -> None:
         """Run at exit."""
         try:
             loop = asyncio.get_running_loop()
@@ -57,48 +70,48 @@ class EightSleep:
             asyncio.run(self.stop())
 
     @property
-    def token(self):
+    def token(self) -> Optional[str]:
         """Return session token."""
         return self._token
 
     @property
-    def userids(self):
-        """Return dict of user ids."""
-        return self._userid
+    def user_id(self) -> Optional[str]:
+        """Return user ID of the logged in user."""
+        return self._user_id
 
     @property
-    def deviceid(self):
+    def device_id(self) -> Optional[str]:
         """Return devices id."""
-        return self._devices[0]
+        return self._device_ids[0]
 
     @property
-    def device_data(self):
+    def device_data(self) -> Dict:
         """Return current raw device_data json."""
-        return self._device_json[0]
+        return self._device_json_list[0]
 
     @property
-    def device_data_history(self):
+    def device_data_history(self) -> List[Dict]:
         """Return full raw device_data json list."""
-        return self._device_json
+        return self._device_json_list
 
     @property
-    def is_pod(self):
+    def is_pod(self) -> bool:
         """Return if device is a POD."""
-        return self._pod
+        return self._is_pod
 
-    def fetch_userid(self, side):
-        """Return the userid for the specified bed side."""
-        for user, obj in self.users.items():
-            if obj.side == side:
-                return user
-        return None
+    def fetch_user_id(self, side: str) -> Optional[str]:
+        """Return the user_id for the specified bed side."""
+        return next(
+            (user_id for user_id, user in self.users.items() if user.side == side),
+            None,
+        )
 
-    async def update_user_data(self):
+    async def update_user_data(self) -> None:
         """Update data for users."""
         for obj in self.users.values():
             await obj.update_user()
 
-    async def start(self):
+    async def start(self) -> bool:
         """Start api initialization."""
         _LOGGER.debug("Initializing pyEight Version: %s", __version__)
         if not self._api_session:
@@ -113,7 +126,7 @@ class EightSleep:
         # We couldn't authenticate
         return False
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop api session."""
         if self._internal_session and self._api_session:
             _LOGGER.debug("Closing eight sleep api session.")
@@ -124,190 +137,121 @@ class EightSleep:
         else:
             _LOGGER.debug("No-op because session is being managed outside of pyEight")
 
-    async def fetch_token(self):
+    async def fetch_token(self) -> None:
         """Fetch new session token from api."""
         url = f"{API_URL}/login"
         payload = {"email": self._email, "password": self._password}
 
-        reg = await self.api_post(url, None, payload, include_token=False)
-        if reg is None:
-            _LOGGER.error("Unable to authenticate and fetch eight token.")
-        else:
-            self._userid = reg["session"]["userId"]
-            self._token = reg["session"]["token"]
-            self._expdate = reg["session"]["expirationDate"]
-            _LOGGER.debug("UserID: %s, Token: %s", self._userid, self.token)
+        reg = await self.api_request("post", url, data=payload, include_token=False)
+        self._user_id = reg["session"]["userId"]
+        self._token = reg["session"]["token"]
+        self._token_expiration = datetime.strptime(
+            reg["session"]["expirationDate"], DATE_TIME_ISO_FORMAT
+        )
+        _LOGGER.debug("UserID: %s, Token: %s", self._user_id, self.token)
 
-    async def fetch_device_list(self):
+    async def fetch_device_list(self) -> None:
         """Fetch list of devices."""
         url = f"{API_URL}/users/me"
 
-        dlist = await self.api_get(url)
-        if dlist is None:
-            _LOGGER.error("Unable to fetch eight devices.")
-        else:
-            self._devices = dlist["user"]["devices"]
+        dlist = await self.api_request("get", url)
+        self._device_ids = dlist["user"]["devices"]
 
-            if "cooling" in dlist["user"]["features"]:
-                self._pod = True
+        if "cooling" in dlist["user"]["features"]:
+            self._is_pod = True
 
-            _LOGGER.debug("Devices: %s, POD: %s", self._devices, self._pod)
+        _LOGGER.debug("Devices: %s, POD: %s", self._device_ids, self._is_pod)
 
-    async def assign_users(self):
+    async def assign_users(self) -> None:
         """Update device properties."""
-        device = self._devices[0]
-        url = f"{API_URL}/devices/{device}?filter=ownerId,leftUserId,rightUserId"
+        device_id = self._device_ids[0]
+        url = f"{API_URL}/devices/{device_id}?filter=ownerId,leftUserId,rightUserId"
 
-        data = await self.api_get(url)
-        if data is None:
-            _LOGGER.error("Unable to assign eight device users.")
-        else:
-            # Populate users
-            if data["result"].get("rightUserId"):
-                user = self.users[data["result"]["rightUserId"]] = EightUser(
-                    self, data["result"]["rightUserId"], "right"
-                )
+        data = await self.api_request("get", url)
+        # Populate users
+        for side in ("left", "right"):
+            user_id = data["result"].get(f"{side}UserId")
+            if user_id is not None and user_id not in self.users:
+                user = self.users[user_id] = EightUser(self, user_id, side)
                 await user.update_user_profile()
 
-            # Check if there's one user
-            if (
-                data["result"].get("leftUserId")
-                and data["result"]["leftUserId"] not in self.users
-            ):
-                user = self.users[data["result"]["leftUserId"]] = EightUser(
-                    self, data["result"]["leftUserId"], "left"
-                )
-                await user.update_user_profile()
-
-            if not self.users:
-                _LOGGER.error("Unable to assign eight device users.")
-
-    def room_temperature(self):
+    @property
+    def room_temperature(self) -> Optional[float]:
         """Return room temperature for both sides of bed."""
         # Check which side is active, if both are return the average
         tmp = None
         tmp2 = None
-        for obj in self.users.values():
-            if obj.current_values["processing"]:
+        for user in self.users.values():
+            if user.current_values["processing"]:
                 if tmp is None:
-                    tmp = obj.current_values["room_temp"]
+                    tmp = user.current_values["room_temp"]
                 else:
-                    tmp = (tmp + obj.current_values["room_temp"]) / 2
+                    tmp = (tmp + user.current_values["room_temp"]) / 2
             else:
                 if tmp2 is None:
-                    tmp2 = obj.current_values["room_temp"]
+                    tmp2 = user.current_values["room_temp"]
                 else:
-                    tmp2 = (tmp2 + obj.current_values["room_temp"]) / 2
+                    tmp2 = (tmp2 + user.current_values["room_temp"]) / 2
 
         if tmp is not None:
             return tmp
+
+        # If tmp2 is None we will just return None
         return tmp2
 
-    def handle_device_json(self, data):
+    def handle_device_json(self, data: Dict[str, Any]) -> None:
         """Manage the device json list."""
-        self._device_json.insert(0, data)
-        self._device_json.pop()
+        self._device_json_list = [data, *self._device_json_list][:10]
 
-    async def update_device_data(self):
+    async def update_device_data(self) -> None:
         """Update device data json."""
-        url = f"{API_URL}/devices/{self.deviceid}"
+        url = f"{API_URL}/devices/{self.device_id}"
 
         # Check for access token expiration (every 15days)
-        exp_delta = datetime.strptime(
-            self._expdate, "%Y-%m-%dT%H:%M:%S.%fZ"
-        ) - datetime.fromtimestamp(time.time())
+        assert self._token_expiration
+        exp_delta = self._token_expiration - datetime.now()
         # Renew 1hr before expiration
         if exp_delta.total_seconds() < 3600:
             _LOGGER.debug("Fetching new access token before expiration.")
             await self.fetch_token()
 
-        device_resp = await self.api_get(url)
-        if device_resp is None:
-            _LOGGER.error("Unable to fetch eight device data.")
-        else:
-            # Want to keep last 10 readings so purge the last after we add
-            self.handle_device_json(device_resp["result"])
-            for obj in self.users.values():
-                obj.dynamic_presence()
+        device_resp = await self.api_request("get", url)
+        # Want to keep last 10 readings so purge the last after we add
+        self.handle_device_json(device_resp["result"])
+        for obj in self.users.values():
+            obj.dynamic_presence()
 
-    async def api_post(self, url, params=None, data=None, include_token=True):
+    async def api_request(
+        self,
+        method: str,
+        url: str,
+        params: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, Any]] = None,
+        include_token: bool = True,
+    ) -> Any:
         """Make api post request."""
-        post = None
+        resp = None
         headers = DEFAULT_HEADERS.copy()
 
         # Only attempt to add the token if we've already retrieved it and if the caller
         # wants us to
-        if self._token is not None and include_token:
+        if include_token:
+            if not self._token:
+                raise NotAuthenticatedError
             headers.update({"Session-Token": self._token})
         try:
-            post = await self._api_session.post(
-                url, headers=headers, params=params, json=data, timeout=CLIENT_TIMEOUT
+            assert self._api_session
+            resp = await self._api_session.request(
+                method,
+                url,
+                headers=headers,
+                params=params,
+                json=data,
+                timeout=CLIENT_TIMEOUT,
+                raise_for_status=True,
             )
-            if post.status != 200:
-                _LOGGER.error("Error posting Eight data: %s", post.status)
-                return None
-
-            if "application/json" in post.headers["content-type"]:
-                post_result = await post.json()
-            else:
-                _LOGGER.debug("Response was not JSON, returning text.")
-                post_result = await post.text()
-
-            return post_result
+            return await resp.json()
 
         except (ClientError, asyncio.TimeoutError, ConnectionRefusedError) as err:
-            _LOGGER.error("Error posting Eight data. %s", err)
-            return None
-
-    async def api_get(self, url, params=None):
-        """Make api fetch request."""
-        request = None
-        headers = DEFAULT_HEADERS.copy()
-        headers.update({"Session-Token": self._token})
-
-        try:
-            request = await self._api_session.get(
-                url, headers=headers, params=params, timeout=CLIENT_TIMEOUT
-            )
-            # _LOGGER.debug('Get URL: %s', request.url)
-            if request.status != 200:
-                _LOGGER.error("Error fetching Eight data: %s", request.status)
-                return None
-
-            if "application/json" in request.headers["content-type"]:
-                request_json = await request.json()
-            else:
-                _LOGGER.debug("Response was not JSON, returning text.")
-                request_json = await request.text()
-
-            return request_json
-
-        except (ClientError, asyncio.TimeoutError, ConnectionRefusedError) as err:
-            _LOGGER.error("Error fetching Eight data. %s", err)
-            return None
-
-    async def api_put(self, url, data=None):
-        """Make api post request."""
-        put = None
-        headers = DEFAULT_HEADERS.copy()
-        headers.update({"Session-Token": self._token})
-
-        try:
-            put = await self._api_session.put(
-                url, headers=headers, json=data, timeout=CLIENT_TIMEOUT
-            )
-            if put.status != 200:
-                _LOGGER.error("Error putting Eight data: %s", put.status)
-                return None
-
-            if "application/json" in put.headers["content-type"]:
-                put_result = await put.json()
-            else:
-                _LOGGER.debug("Response was not JSON, returning text.")
-                put_result = await put.text()
-
-            return put_result
-
-        except (ClientError, asyncio.TimeoutError, ConnectionRefusedError) as err:
-            _LOGGER.error("Error putting Eight data. %s", err)
-            return None
+            _LOGGER.error("Error %sing Eight data. %s", method, err)
+            raise RequestError from err

@@ -14,6 +14,8 @@ __version__ = f"{MAJOR_VERSION}.{MINOR_VERSION}.{SUB_MINOR_VERSION}"
 API_URL = "https://client-api.8slp.net/v1"
 
 DEFAULT_TIMEOUT = 240
+DATE_TIME_ISO_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
+DATE_FORMAT = "%Y-%m-%d"
 
 DEFAULT_HEADERS = {
     "content-type": "application/json",
