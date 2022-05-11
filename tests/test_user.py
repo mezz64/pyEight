@@ -77,7 +77,9 @@ async def test_update_user_data(client_session):
         "score": 42,
         "wakeup": 70,
     }
-    assert user.last_session_date == datetime(2022, 3, 21, 4, 12, tzinfo=ZoneInfo("UTC"))
+    assert user.last_session_date == datetime(
+        2022, 3, 21, 4, 12, tzinfo=ZoneInfo("UTC")
+    )
     assert user.last_session_processing is False
     assert user.last_sleep_score == 79
     assert user.last_sleep_breakdown == {
