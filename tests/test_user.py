@@ -77,7 +77,7 @@ async def test_update_user_data(client_session):
         "score": 42,
         "wakeup": 70,
     }
-    assert user.last_session_date == datetime(2022, 3, 21, 4, 12, tzinfo=pytz.utc)
+    assert user.last_session_date == datetime(2022, 3, 21, 4, 12, tzinfo=ZoneInfo("UTC"))
     assert user.last_session_processing is False
     assert user.last_sleep_score == 79
     assert user.last_sleep_breakdown == {
@@ -94,7 +94,7 @@ async def test_update_user_data(client_session):
     assert user.last_values == {
         "bed_temp": 31.35841704204205,
         "breakdown": {"awake": 7020, "deep": 5100, "light": 13800, "rem": 6000},
-        "date": datetime(2022, 3, 21, 4, 12, tzinfo=pytz.utc),
+        "date": datetime(2022, 3, 21, 4, 12, tzinfo=ZoneInfo("UTC")),
         "heart_rate": 73.14141414141415,
         "processing": False,
         "resp_rate": 11.63730158730159,
