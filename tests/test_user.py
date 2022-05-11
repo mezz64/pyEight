@@ -1,7 +1,6 @@
 """Tests for the eight module."""
 from datetime import datetime
-
-import pytz
+from zoneinfo import ZoneInfo
 
 from pyeight.eight import EightSleep
 
@@ -31,7 +30,9 @@ async def test_update_user_data(client_session):
         "remaining": 0,
         "last_seen": None,
     }
-    assert user.current_session_date == datetime(2022, 3, 21, 19, 8, tzinfo=pytz.utc)
+    assert user.current_session_date == datetime(
+        2022, 3, 21, 19, 8, tzinfo=ZoneInfo("UTC")
+    )
     assert user.current_fitness_session_date == "2022-03-22"
     assert user.current_session_processing is False
     assert user.current_sleep_stage == "awake"
@@ -59,7 +60,7 @@ async def test_update_user_data(client_session):
     assert user.current_values == {
         "bed_temp": 31.88836734693878,
         "breakdown": {"awake": 4800, "deep": 1800, "light": 4620, "rem": 900},
-        "date": datetime(2022, 3, 21, 19, 8, tzinfo=pytz.utc),
+        "date": datetime(2022, 3, 21, 19, 8, tzinfo=ZoneInfo("UTC")),
         "heart_rate": 79.33333333333333,
         "processing": False,
         "resp_rate": 12,
