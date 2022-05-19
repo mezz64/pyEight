@@ -5,7 +5,7 @@ from pyeight.eight import EightSleep
 async def test_setup(client_session):
     """Test the setup of the eight module."""
     eight = EightSleep(
-        "raman325@gmail.com", "password", "UTC", client_session=client_session
+        "johndoe@gmail.com", "password", "UTC", client_session=client_session
     )
     await eight.start()
     assert eight.token == "fake_token"
@@ -23,7 +23,7 @@ async def test_setup(client_session):
 async def test_update_device_data(client_session):
     """Test update device data."""
     eight = EightSleep(
-        "raman325@gmail.com", "password", "UTC", client_session=client_session
+        "johndoe@gmail.com", "password", "UTC", client_session=client_session
     )
     await eight.start()
     await eight.update_device_data()

@@ -117,7 +117,7 @@ async def test_update_user_data(client_session):
 async def test_update_user_data_missing_data(client_session_missing_data):
     """Test update user data with missing data."""
     eight = EightSleep(
-        "raman325@gmail.com",
+        "johndoe@gmail.com",
         "password",
         "UTC",
         client_session=client_session_missing_data,
