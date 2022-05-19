@@ -9,7 +9,7 @@ from pyeight.user import EightUser
 async def test_update_user_data(client_session):
     """Test update user data."""
     eight = EightSleep(
-        "raman325@gmail.com", "password", "UTC", client_session=client_session
+        "johndoe@gmail.com", "password", "UTC", client_session=client_session
     )
     await eight.start()
     await eight.update_device_data()
