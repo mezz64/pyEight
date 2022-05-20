@@ -6,11 +6,13 @@ Copyright (c) 2017-2022 John Mihalic <https://github.com/mezz64>
 Licensed under the MIT license.
 
 """
+from __future__ import annotations
+
 import asyncio
 import atexit
 from datetime import datetime
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from aiohttp.client import ClientError, ClientSession, ClientTimeout
 
@@ -37,7 +39,7 @@ class EightSleep:
         email: str,
         password: str,
         tzone: str,
-        client_session: Optional[ClientSession] = None,
+        client_session: ClientSession | None = None,
     ) -> None:
         """Initialize eight sleep class."""
         self._email = email
@@ -45,16 +47,16 @@ class EightSleep:
 
         self.tzone = tzone
 
-        self.users: Dict[str, EightUser] = {}
+        self.users: dict[str, EightUser] = {}
 
-        self._user_id: Optional[str] = None
-        self._token: Optional[str] = None
-        self._token_expiration: Optional[datetime] = None
-        self._device_ids: List[str] = []
+        self._user_id: str | None = None
+        self._token: str | None = None
+        self._token_expiration: datetime | None = None
+        self._device_ids: list[str] = []
         self._is_pod: bool = False
 
         # Setup 10 element list
-        self._device_json_list: List[Dict] = []
+        self._device_json_list: list[dict] = []
 
         self._api_session = client_session
         self._internal_session: bool = False
@@ -70,27 +72,27 @@ class EightSleep:
             asyncio.run(self.stop())
 
     @property
-    def token(self) -> Optional[str]:
+    def token(self) -> str | None:
         """Return session token."""
         return self._token
 
     @property
-    def user_id(self) -> Optional[str]:
+    def user_id(self) -> str | None:
         """Return user ID of the logged in user."""
         return self._user_id
 
     @property
-    def device_id(self) -> Optional[str]:
+    def device_id(self) -> str | None:
         """Return devices id."""
         return self._device_ids[0]
 
     @property
-    def device_data(self) -> Dict:
+    def device_data(self) -> dict:
         """Return current raw device_data json."""
         return self._device_json_list[0]
 
     @property
-    def device_data_history(self) -> List[Dict]:
+    def device_data_history(self) -> list[dict]:
         """Return full raw device_data json list."""
         return self._device_json_list
 
@@ -99,7 +101,7 @@ class EightSleep:
         """Return if device is a POD."""
         return self._is_pod
 
-    def fetch_user_id(self, side: str) -> Optional[str]:
+    def fetch_user_id(self, side: str) -> str | None:
         """Return the user_id for the specified bed side."""
         return next(
             (user_id for user_id, user in self.users.items() if user.side == side),
@@ -176,7 +178,7 @@ class EightSleep:
                 await user.update_user_profile()
 
     @property
-    def room_temperature(self) -> Optional[float]:
+    def room_temperature(self) -> float | None:
         """Return room temperature for both sides of bed."""
         # Check which side is active, if both are return the average
         tmp = None
@@ -199,7 +201,7 @@ class EightSleep:
         # If tmp2 is None we will just return None
         return tmp2
 
-    def handle_device_json(self, data: Dict[str, Any]) -> None:
+    def handle_device_json(self, data: dict[str, Any]) -> None:
         """Manage the device json list."""
         self._device_json_list = [data, *self._device_json_list][:10]
 
@@ -225,8 +227,8 @@ class EightSleep:
         self,
         method: str,
         url: str,
-        params: Optional[Dict[str, Any]] = None,
-        data: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
+        data: dict[str, Any] | None = None,
         include_token: bool = True,
     ) -> Any:
         """Make api post request."""

@@ -5,10 +5,12 @@ Provides user data for Eight Sleep
 Copyright (c) 2017-2022 John Mihalic <https://github.com/mezz64>
 Licensed under the MIT license.
 """
+from __future__ import annotations
+
 from datetime import datetime, timedelta
 import logging
 import statistics
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 from zoneinfo import ZoneInfo
 
 from .constants import API_URL, DATE_FORMAT, DATE_TIME_ISO_FORMAT
@@ -27,16 +29,16 @@ class EightUser:  # pylint: disable=too-many-public-methods
         self.device = device
         self.user_id = user_id
         self.side = side
-        self._user_profile: Dict[str, Any] = {}
+        self._user_profile: dict[str, Any] = {}
 
-        self.trends: List[Dict[str, Any]] = []
-        self.intervals: List[Dict[str, Any]] = []
+        self.trends: list[dict[str, Any]] = []
+        self.intervals: list[dict[str, Any]] = []
 
         # Variables to do dynamic presence
         self.presence: bool = False
         self.observed_low: int = 0
 
-    def _get_trend(self, trend_num: int, keys: Union[str, Tuple[str, ...]]) -> Any:
+    def _get_trend(self, trend_num: int, keys: str | tuple[str, ...]) -> Any:
         """Get trend value for specified key."""
         if len(self.trends) < trend_num + 1:
             return None
@@ -52,36 +54,35 @@ class EightUser:  # pylint: disable=too-many-public-methods
         """Get fitness score for specified key."""
         return self._get_trend(trend_num, ("sleepFitnessScore", key, "score"))
 
-    def _get_sleep_score(self, interval_num: int) -> Optional[int]:
+    def _get_sleep_score(self, interval_num: int) -> int | None:
         """Return sleep score for a given interval."""
         if len(self.intervals) < interval_num + 1:
             return None
         return self.intervals[interval_num].get("score")
 
-    def _interval_timeseries(self, interval_num: int) -> Optional[Dict[str, Any]]:
+    def _interval_timeseries(self, interval_num: int) -> dict[str, Any] | None:
         """Return timeseries interval if it exists."""
         if len(self.intervals) < interval_num + 1:
             return None
         return self.intervals[interval_num].get("timeseries", {})
 
-    def _get_current_interval_property_value(
-        self, key: str
-    ) -> Optional[Union[float, int]]:
+    def _get_current_interval_property_value(self, key: str) -> int | float | None:
         """Get current property from intervals."""
-        timeseries_data = self._interval_timeseries(0)
-        if not timeseries_data or timeseries_data.get(key) is None:
+        if (
+            not (timeseries_data := self._interval_timeseries(0))
+            or timeseries_data.get(key) is None
+        ):
             return None
         return timeseries_data[key][-1][1]
 
     def _calculate_interval_data(
         self, interval_num: int, key: str, average_data: bool = True
-    ) -> Optional[Union[int, float]]:
+    ) -> int | float | None:
         """Calculate interval data."""
-        timeseries = self._interval_timeseries(interval_num)
-        if timeseries is None:
-            return None
-        data_list = timeseries.get(key)
-        if not data_list:
+
+        if (timeseries := self._interval_timeseries(interval_num)) is None or (
+            data_list := timeseries.get(key)
+        ) is None:
             return None
         total = 0
         for entry in data_list:
@@ -90,25 +91,22 @@ class EightUser:  # pylint: disable=too-many-public-methods
             return total
         return total / len(data_list)
 
-    def _session_date(self, interval_num: int) -> Optional[datetime]:
+    def _session_date(self, interval_num: int) -> datetime | None:
         """Get session date for given interval."""
         if (
             len(self.intervals) < interval_num + 1
-            or "ts" not in self.intervals[interval_num]
+            or (session_date := self.intervals[interval_num].get("ts")) is None
         ):
             return None
-        date = datetime.strptime(
-            self.intervals[interval_num]["ts"], DATE_TIME_ISO_FORMAT
-        )
+        date = datetime.strptime(session_date, DATE_TIME_ISO_FORMAT)
         return date.replace(tzinfo=ZoneInfo("UTC"))
 
-    def _sleep_breakdown(self, interval_num: int) -> Optional[Dict[str, Any]]:
+    def _sleep_breakdown(self, interval_num: int) -> dict[str, Any] | None:
         """Return durations of sleep stages for given session."""
-        if len(self.intervals) < (interval_num + 1) or not self.intervals[
-            interval_num
-        ].get("stages"):
+        if len(self.intervals) < (interval_num + 1) or not (
+            stages := self.intervals[interval_num].get("stages")
+        ):
             return None
-        stages = self.intervals[interval_num]["stages"]
         breakdown = {}
         for stage in stages:
             if stage["stage"] in ("out"):
@@ -119,14 +117,14 @@ class EightUser:  # pylint: disable=too-many-public-methods
 
         return breakdown
 
-    def _session_processing(self, interval_num: int) -> Optional[bool]:
+    def _session_processing(self, interval_num: int) -> bool | None:
         """Return processing state of given session."""
         if len(self.intervals) < interval_num + 1:
             return None
         return self.intervals[interval_num].get("incomplete", False)
 
     @property
-    def user_profile(self) -> Optional[Dict[str, Any]]:
+    def user_profile(self) -> dict[str, Any] | None:
         """Return userdata."""
         return self._user_profile
 
@@ -136,12 +134,12 @@ class EightUser:  # pylint: disable=too-many-public-methods
         return self.presence
 
     @property
-    def target_heating_level(self) -> Optional[int]:
+    def target_heating_level(self) -> int | None:
         """Return target heating/cooling level."""
         return self.device.device_data.get(f"{self.side}TargetHeatingLevel")
 
     @property
-    def heating_level(self) -> Optional[int]:
+    def heating_level(self) -> int | None:
         """Return heating/cooling level."""
         level = self.device.device_data.get(f"{self.side}HeatingLevel")
         # Update observed low
@@ -156,51 +154,46 @@ class EightUser:  # pylint: disable=too-many-public-methods
 
         return self.device.device_data_history[num].get(f"{self.side}HeatingLevel", 0)
 
-    def _now_heating_or_cooling(
-        self, target_heating_level_check: bool
-    ) -> Optional[bool]:
+    def _now_heating_or_cooling(self, target_heating_level_check: bool) -> bool | None:
         """Return true/false if heating or cooling is currently happening."""
         key = f"{self.side}NowHeating"
         if (
             self.target_heating_level is None
-            or self.device.device_data.get(key) is None
+            or (target := self.device.device_data.get(key)) is None
         ):
             return None
-        return self.device.device_data.get(key) and target_heating_level_check
+        return target and target_heating_level_check
 
     @property
-    def now_heating(self) -> Optional[bool]:
+    def now_heating(self) -> bool | None:
         """Return current heating state."""
-        return self._now_heating_or_cooling(
-            self.target_heating_level is not None and self.target_heating_level > 0
-        )
+        level = self.target_heating_level
+        return self._now_heating_or_cooling(level is not None and level > 0)
 
     @property
-    def now_cooling(self) -> Optional[bool]:
+    def now_cooling(self) -> bool | None:
         """Return current cooling state."""
-        return self._now_heating_or_cooling(
-            self.target_heating_level is not None and self.target_heating_level < 0
-        )
+        level = self.target_heating_level
+        return self._now_heating_or_cooling(level is not None and level < 0)
 
     @property
-    def heating_remaining(self) -> Optional[int]:
+    def heating_remaining(self) -> int | None:
         """Return seconds of heat/cool time remaining."""
         return self.device.device_data.get(f"{self.side}HeatingDuration")
 
     @property
-    def last_seen(self) -> Optional[str]:
+    def last_seen(self) -> str | None:
         """Return mattress last seen time.
 
         These values seem to be rarely updated correctly in the API.
         Don't expect accurate results from this property.
         """
-        last_seen = self.device.device_data.get(f"{self.side}PresenceEnd")
-        if not last_seen:
+        if not (last_seen := self.device.device_data.get(f"{self.side}PresenceEnd")):
             return None
         return datetime.fromtimestamp(int(last_seen)).strftime(DATE_TIME_ISO_FORMAT)
 
     @property
-    def heating_values(self) -> Dict[str, Any]:
+    def heating_values(self) -> dict[str, Any]:
         """Return a dict of all the current heating values."""
         return {
             "level": self.heating_level,
@@ -211,31 +204,31 @@ class EightUser:  # pylint: disable=too-many-public-methods
         }
 
     @property
-    def current_session_date(self) -> Optional[datetime]:
+    def current_session_date(self) -> datetime | None:
         """Return date/time for start of last session data."""
         return self._session_date(0)
 
     @property
-    def current_session_processing(self) -> Optional[bool]:
+    def current_session_processing(self) -> bool | None:
         """Return processing state of current session."""
         return self._session_processing(0)
 
     @property
-    def current_sleep_stage(self) -> Optional[str]:
+    def current_sleep_stage(self) -> str | None:
         """Return sleep stage for in-progress session."""
         if (
             not self.intervals
-            or not self.intervals[0].get("stages")
-            or len(self.intervals[0]["stages"]) < 2
+            or not (stages := self.intervals[0].get("stages"))
+            or len(stages) < 2
         ):
             return None
         # API now always has an awake state last in the dict
         # so always pull the second to last stage while we are
         # in a processing state
         if self.current_session_processing:
-            stage = self.intervals[0]["stages"][-2].get("stage")
+            stage = stages[-2].get("stage")
         else:
-            stage = self.intervals[0]["stages"][-1].get("stage")
+            stage = stages[-1].get("stage")
 
         # UNRELIABLE... Removing for now.
         # Check sleep stage against last_seen time to make
@@ -257,74 +250,74 @@ class EightUser:  # pylint: disable=too-many-public-methods
         return stage
 
     @property
-    def current_sleep_score(self) -> Optional[int]:
+    def current_sleep_score(self) -> int | None:
         """Return sleep score for in-progress session."""
         return self._get_sleep_score(0)
 
     @property
-    def current_sleep_fitness_score(self) -> Optional[int]:
+    def current_sleep_fitness_score(self) -> int | None:
         """Return sleep fitness score for latest session."""
         return self._get_trend(0, ("sleepFitnessScore", "total"))
 
     @property
-    def current_sleep_duration_score(self) -> Optional[int]:
+    def current_sleep_duration_score(self) -> int | None:
         """Return sleep duration score for latest session."""
         return self._get_fitness_score(0, "sleepDurationSeconds")
 
     @property
-    def current_latency_asleep_score(self) -> Optional[int]:
+    def current_latency_asleep_score(self) -> int | None:
         """Return latency asleep score for latest session."""
         return self._get_fitness_score(0, "latencyAsleepSeconds")
 
     @property
-    def current_latency_out_score(self) -> Optional[int]:
+    def current_latency_out_score(self) -> int | None:
         """Return latency out score for latest session."""
         return self._get_fitness_score(0, "latencyOutSeconds")
 
     @property
-    def current_wakeup_consistency_score(self) -> Optional[int]:
+    def current_wakeup_consistency_score(self) -> int | None:
         """Return wakeup consistency score for latest session."""
         return self._get_fitness_score(0, "wakeupConsistency")
 
     @property
-    def current_fitness_session_date(self) -> Optional[str]:
+    def current_fitness_session_date(self) -> str | None:
         """Return date/time for start of last session data."""
         return self._get_trend(0, "day")
 
     @property
-    def current_sleep_breakdown(self) -> Optional[Dict[str, Any]]:
+    def current_sleep_breakdown(self) -> dict[str, Any] | None:
         """Return durations of sleep stages for in-progress session."""
         return self._sleep_breakdown(0)
 
     @property
-    def current_bed_temp(self) -> Optional[Union[int, float]]:
+    def current_bed_temp(self) -> int | float | None:
         """Return current bed temperature for in-progress session."""
         return self._get_current_interval_property_value("tempBedC")
 
     @property
-    def current_room_temp(self) -> Optional[Union[int, float]]:
+    def current_room_temp(self) -> int | float | None:
         """Return current room temperature for in-progress session."""
         return self._get_current_interval_property_value("tempRoomC")
 
     @property
-    def current_tnt(self) -> Optional[int]:
+    def current_tnt(self) -> int | None:
         """Return current toss & turns for in-progress session."""
         return cast(
             Optional[int], self._calculate_interval_data(0, "tnt", average_data=False)
         )
 
     @property
-    def current_resp_rate(self) -> Optional[Union[int, float]]:
+    def current_resp_rate(self) -> int | float | None:
         """Return current respiratory rate for in-progress session."""
         return self._get_current_interval_property_value("respiratoryRate")
 
     @property
-    def current_heart_rate(self) -> Optional[Union[int, float]]:
+    def current_heart_rate(self) -> int | float | None:
         """Return current heart rate for in-progress session."""
         return self._get_current_interval_property_value("heartRate")
 
     @property
-    def current_values(self) -> Dict[str, Any]:
+    def current_values(self) -> dict[str, Any]:
         """Return a dict of all the 'current' parameters."""
         return {
             "date": self.current_session_date,
@@ -340,7 +333,7 @@ class EightUser:  # pylint: disable=too-many-public-methods
         }
 
     @property
-    def current_fitness_values(self) -> Dict[str, Any]:
+    def current_fitness_values(self) -> dict[str, Any]:
         """Return a dict of all the 'current' fitness score parameters."""
         return {
             "date": self.current_fitness_session_date,
@@ -352,84 +345,84 @@ class EightUser:  # pylint: disable=too-many-public-methods
         }
 
     @property
-    def last_session_date(self) -> Optional[datetime]:
+    def last_session_date(self) -> datetime | None:
         """Return date/time for start of last session data."""
         return self._session_date(1)
 
     @property
-    def last_session_processing(self) -> Optional[bool]:
+    def last_session_processing(self) -> bool | None:
         """Return processing state of current session."""
         return self._session_processing(1)
 
     @property
-    def last_sleep_score(self) -> Optional[int]:
+    def last_sleep_score(self) -> int | None:
         """Return sleep score from last complete sleep session."""
         return self._get_sleep_score(1)
 
     @property
-    def last_sleep_fitness_score(self) -> Optional[int]:
+    def last_sleep_fitness_score(self) -> int | None:
         """Return sleep fitness score for previous sleep session."""
         return self._get_trend(1, ("sleepFitnessScore", "total"))
 
     @property
-    def last_sleep_duration_score(self) -> Optional[int]:
+    def last_sleep_duration_score(self) -> int | None:
         """Return sleep duration score for previous session."""
         return self._get_fitness_score(1, "sleepDurationSeconds")
 
     @property
-    def last_latency_asleep_score(self) -> Optional[int]:
+    def last_latency_asleep_score(self) -> int | None:
         """Return latency asleep score for previous session."""
         return self._get_fitness_score(1, "latencyAsleepSeconds")
 
     @property
-    def last_latency_out_score(self) -> Optional[int]:
+    def last_latency_out_score(self) -> int | None:
         """Return latency out score for previous session."""
         return self._get_fitness_score(1, "latencyOutSeconds")
 
     @property
-    def last_wakeup_consistency_score(self) -> Optional[int]:
+    def last_wakeup_consistency_score(self) -> int | None:
         """Return wakeup consistency score for previous session."""
         return self._get_fitness_score(1, "wakeupConsistency")
 
     @property
-    def last_fitness_session_date(self) -> Optional[str]:
+    def last_fitness_session_date(self) -> str | None:
         """Return date/time for start of previous session data."""
         return self._get_trend(1, "day")
 
     @property
-    def last_sleep_breakdown(self) -> Optional[Dict[str, Any]]:
+    def last_sleep_breakdown(self) -> dict[str, Any] | None:
         """Return durations of sleep stages for last complete session."""
         return self._sleep_breakdown(1)
 
     @property
-    def last_bed_temp(self) -> Optional[Union[int, float]]:
+    def last_bed_temp(self) -> int | float | None:
         """Return avg bed temperature for last session."""
         return self._calculate_interval_data(1, "tempBedC")
 
     @property
-    def last_room_temp(self) -> Optional[Union[int, float]]:
+    def last_room_temp(self) -> int | float | None:
         """Return avg room temperature for last session."""
         return self._calculate_interval_data(1, "tempRoomC")
 
     @property
-    def last_tnt(self) -> Optional[int]:
+    def last_tnt(self) -> int | None:
         """Return toss & turns for last session."""
         return cast(
             Optional[int], self._calculate_interval_data(1, "tnt", average_data=False)
         )
 
     @property
-    def last_resp_rate(self) -> Optional[Union[int, float]]:
+    def last_resp_rate(self) -> int | float | None:
         """Return avg respiratory rate for last session."""
         return self._calculate_interval_data(1, "respiratoryRate")
 
     @property
-    def last_heart_rate(self) -> Optional[Union[int, float]]:
+    def last_heart_rate(self) -> int | float | None:
         """Return avg heart rate for last session."""
         return self._calculate_interval_data(1, "heartRate")
 
     @property
-    def last_values(self) -> Dict[str, Any]:
+    def last_values(self) -> dict[str, Any]:
         """Return a dict of all the 'last' parameters."""
         return {
             "date": self.last_session_date,
@@ -444,7 +437,7 @@ class EightUser:  # pylint: disable=too-many-public-methods
         }
 
     @property
-    def last_fitness_values(self) -> Dict[str, Any]:
+    def last_fitness_values(self) -> dict[str, Any]:
         """Return a dict of all the 'last' fitness score parameters."""
         return {
             "date": self.last_fitness_session_date,
@@ -455,14 +448,14 @@ class EightUser:  # pylint: disable=too-many-public-methods
             "wakeup": self.last_wakeup_consistency_score,
         }
 
-    def trend_sleep_score(self, date: str) -> Optional[int]:
+    def trend_sleep_score(self, date: str) -> int | None:
         """Return trend sleep score for specified date."""
         return next(
             (day.get("score") for day in self.trends if day.get("day") == date),
             None,
         )
 
-    def sleep_fitness_score(self, date: str) -> Optional[int]:
+    def sleep_fitness_score(self, date: str) -> int | None:
         """Return sleep fitness score for specified date."""
         return next(
             (
@@ -479,8 +472,7 @@ class EightUser:  # pylint: disable=too-many-public-methods
         local_10 = []
 
         for i in range(0, 10):
-            level = self.past_heating_level(i)
-            if level is None:
+            if (level := self.past_heating_level(i)) is None:
                 continue
             if level == 0:
                 _LOGGER.debug("Cant calculate stats yet...")
