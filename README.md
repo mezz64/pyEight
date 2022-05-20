@@ -13,7 +13,7 @@ Special thanks to github user @alyc100 for making his SmartThings Eight Sleep co
 
 # Requirements
 
-* python >= 3.7
+* python >= 3.9
 * aiohttp >= 2.0
 * asyncio
 

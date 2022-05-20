@@ -1,0 +1,353 @@
+{
+  "days": [
+    {
+      "day": "2022-03-15",
+      "score": 13,
+      "sleepFitnessScore": {
+        "total": 23,
+        "sleepDurationSeconds": {
+          "current": 2340,
+          "average": 21615,
+          "score": 0,
+          "weighted": 0
+        },
+        "latencyAsleepSeconds": {
+          "current": 720,
+          "average": 1800,
+          "score": 100,
+          "weighted": 20
+        },
+        "latencyOutSeconds": {
+          "current": 960,
+          "average": 1410,
+          "score": 27,
+          "weighted": 3
+        },
+        "wakeupConsistency": {
+          "current": "08:42:00",
+          "average": "06:35:00",
+          "score": 0,
+          "weighted": 0
+        }
+      },
+      "presenceDuration": 10860,
+      "sleepDuration": 2340,
+      "deepPercent": 0,
+      "presenceStart": "2022-03-15T11:25:00.000Z",
+      "presenceEnd": "2022-03-15T12:58:00.000Z",
+      "sleepStart": "2022-03-15T11:37:00.000Z",
+      "sleepEnd": "2022-03-15T12:42:00.000Z",
+      "tnt": 1,
+      "mainSessionId": "1234567890",
+      "sessionIds": ["1234567890"],
+      "incomplete": false,
+      "tags": []
+    },
+    {
+      "day": "2022-03-16",
+      "score": 86,
+      "sleepFitnessScore": {
+        "total": 66,
+        "sleepDurationSeconds": {
+          "current": 26340,
+          "average": 15945,
+          "score": 100,
+          "weighted": 40
+        },
+        "latencyAsleepSeconds": {
+          "current": 2700,
+          "average": 1380,
+          "score": 50,
+          "weighted": 10
+        },
+        "latencyOutSeconds": {
+          "current": 900,
+          "average": 1395,
+          "score": 33,
+          "weighted": 3
+        },
+        "wakeupConsistency": {
+          "current": "09:06:00",
+          "average": "07:50:30",
+          "score": 42,
+          "weighted": 13
+        }
+      },
+      "presenceDuration": 35820,
+      "sleepDuration": 26340,
+      "deepPercent": 0.18,
+      "presenceStart": "2022-03-16T04:01:00.000Z",
+      "presenceEnd": "2022-03-16T13:21:00.000Z",
+      "sleepStart": "2022-03-16T04:46:00.000Z",
+      "sleepEnd": "2022-03-16T13:06:00.000Z",
+      "tnt": 12,
+      "mainSessionId": "1234567891",
+      "sessionIds": ["1234567891"],
+      "incomplete": false,
+      "tags": []
+    },
+    {
+      "day": "2022-03-17",
+      "score": 54,
+      "sleepFitnessScore": {
+        "total": 45,
+        "sleepDurationSeconds": {
+          "current": 18420,
+          "average": 17535,
+          "score": 37,
+          "weighted": 15
+        },
+        "latencyAsleepSeconds": {
+          "current": 2520,
+          "average": 1590,
+          "score": 60,
+          "weighted": 12
+        },
+        "latencyOutSeconds": {
+          "current": 300,
+          "average": 1140,
+          "score": 100,
+          "weighted": 10
+        },
+        "wakeupConsistency": {
+          "current": "05:58:00",
+          "average": "07:32:00",
+          "score": 25,
+          "weighted": 8
+        }
+      },
+      "presenceDuration": 23940,
+      "sleepDuration": 14100,
+      "deepPercent": 0.3,
+      "presenceStart": "2022-03-17T04:04:00.000Z",
+      "presenceEnd": "2022-03-17T10:03:00.000Z",
+      "sleepStart": "2022-03-17T04:46:00.000Z",
+      "sleepEnd": "2022-03-17T09:58:00.000Z",
+      "tnt": 5,
+      "mainSessionId": "1234567892",
+      "sessionIds": ["1234567892", "1234567893"],
+      "incomplete": false,
+      "tags": []
+    },
+    {
+      "day": "2022-03-18",
+      "score": 65,
+      "sleepFitnessScore": {
+        "total": 69,
+        "sleepDurationSeconds": {
+          "current": 22920,
+          "average": 16860,
+          "score": 79,
+          "weighted": 32
+        },
+        "latencyAsleepSeconds": {
+          "current": 660,
+          "average": 2025,
+          "score": 100,
+          "weighted": 20
+        },
+        "latencyOutSeconds": {
+          "current": 1440,
+          "average": 675,
+          "score": 0,
+          "weighted": 0
+        },
+        "wakeupConsistency": {
+          "current": "05:56:00",
+          "average": "06:58:19",
+          "score": 55,
+          "weighted": 17
+        }
+      },
+      "presenceDuration": 23820,
+      "sleepDuration": 15540,
+      "deepPercent": 0.27,
+      "presenceStart": "2022-03-18T04:55:00.000Z",
+      "presenceEnd": "2022-03-18T10:20:00.000Z",
+      "sleepStart": "2022-03-18T05:06:00.000Z",
+      "sleepEnd": "2022-03-18T09:56:00.000Z",
+      "tnt": 3,
+      "mainSessionId": "1234567894",
+      "sessionIds": ["1234567894", "1234567895"],
+      "incomplete": false,
+      "tags": []
+    },
+    {
+      "day": "2022-03-19",
+      "score": 91,
+      "sleepFitnessScore": {
+        "total": 62,
+        "sleepDurationSeconds": {
+          "current": 26940,
+          "average": 18072,
+          "score": 100,
+          "weighted": 40
+        },
+        "latencyAsleepSeconds": {
+          "current": 2520,
+          "average": 1752,
+          "score": 60,
+          "weighted": 12
+        },
+        "latencyOutSeconds": {
+          "current": 240,
+          "average": 828,
+          "score": 100,
+          "weighted": 10
+        },
+        "wakeupConsistency": {
+          "current": "09:29:00",
+          "average": "07:05:15",
+          "score": 0,
+          "weighted": 0
+        }
+      },
+      "presenceDuration": 36660,
+      "sleepDuration": 26940,
+      "deepPercent": 0.19,
+      "presenceStart": "2022-03-19T04:02:00.000Z",
+      "presenceEnd": "2022-03-19T13:33:00.000Z",
+      "sleepStart": "2022-03-19T04:44:00.000Z",
+      "sleepEnd": "2022-03-19T13:29:00.000Z",
+      "tnt": 10,
+      "mainSessionId": "1234567896",
+      "sessionIds": ["1234567896"],
+      "incomplete": false,
+      "tags": []
+    },
+    {
+      "day": "2022-03-20",
+      "score": 42,
+      "sleepFitnessScore": {
+        "total": 60,
+        "sleepDurationSeconds": {
+          "current": 9120,
+          "average": 19550,
+          "score": 0,
+          "weighted": 0
+        },
+        "latencyAsleepSeconds": {
+          "current": 1800,
+          "average": 1880,
+          "score": 100,
+          "weighted": 20
+        },
+        "latencyOutSeconds": {
+          "current": 0,
+          "average": 730,
+          "score": 100,
+          "weighted": 10
+        },
+        "wakeupConsistency": {
+          "current": "07:26:00",
+          "average": "07:42:30",
+          "score": 99,
+          "weighted": 30
+        }
+      },
+      "presenceDuration": 15060,
+      "sleepDuration": 9120,
+      "deepPercent": 0.33,
+      "presenceStart": "2022-03-20T08:07:00.000Z",
+      "presenceEnd": "2022-03-20T11:26:00.000Z",
+      "sleepStart": "2022-03-20T08:37:00.000Z",
+      "sleepEnd": "2022-03-20T11:26:00.000Z",
+      "tnt": 5,
+      "mainSessionId": "1234567897",
+      "sessionIds": ["1234567897"],
+      "incomplete": false,
+      "tags": []
+    },
+    {
+      "day": "2022-03-21",
+      "score": 79,
+      "sleepFitnessScore": {
+        "total": 100,
+        "sleepDurationSeconds": {
+          "current": 32220,
+          "average": 17680,
+          "score": 100,
+          "weighted": 40
+        },
+        "latencyAsleepSeconds": {
+          "current": 1560,
+          "average": 1820,
+          "score": 100,
+          "weighted": 20
+        },
+        "latencyOutSeconds": {
+          "current": 0,
+          "average": 640,
+          "score": 100,
+          "weighted": 10
+        },
+        "wakeupConsistency": {
+          "current": "10:01:00",
+          "average": "09:45:00",
+          "score": 99,
+          "weighted": 30
+        }
+      },
+      "presenceDuration": 38760,
+      "sleepDuration": 24900,
+      "deepPercent": 0.2,
+      "presenceStart": "2022-03-21T04:12:00.000Z",
+      "presenceEnd": "2022-03-21T14:01:00.000Z",
+      "sleepStart": "2022-03-21T04:38:00.000Z",
+      "sleepEnd": "2022-03-21T14:01:00.000Z",
+      "tnt": 10,
+      "mainSessionId": "1234567898",
+      "sessionIds": ["1234567898", "1234567899"],
+      "incomplete": false,
+      "tags": []
+    },
+    {
+      "day": "2022-03-22",
+      "score": 53,
+      "sleepFitnessScore": {
+        "total": 42,
+        "sleepDurationSeconds": {
+          "current": 11820,
+          "average": 22660,
+          "score": 0,
+          "weighted": 0
+        },
+        "latencyAsleepSeconds": {
+          "current": 2640,
+          "average": 1960,
+          "score": 53,
+          "weighted": 11
+        },
+        "latencyOutSeconds": {
+          "current": 0,
+          "average": 480,
+          "score": 100,
+          "weighted": 10
+        },
+        "wakeupConsistency": {
+          "current": "08:28:00",
+          "average": "09:14:30",
+          "score": 70,
+          "weighted": 21
+        }
+      },
+      "presenceDuration": 31980,
+      "sleepDuration": 11820,
+      "deepPercent": 0.28,
+      "presenceStart": "2022-03-22T04:14:00.000Z",
+      "presenceEnd": "2022-03-22T12:28:00.000Z",
+      "sleepStart": "2022-03-22T04:58:00.000Z",
+      "sleepEnd": "2022-03-22T12:28:00.000Z",
+      "tnt": 5,
+      "mainSessionId": "1234567900",
+      "sessionIds": ["1234567900"],
+      "incomplete": false,
+      "tags": []
+    }
+  ],
+  "avgScore": 65,
+  "avgPresenceDuration": 29142,
+  "avgSleepDuration": 18568,
+  "avgDeepPercent": 0.22,
+  "avgTnt": 7
+}

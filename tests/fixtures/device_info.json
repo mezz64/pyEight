@@ -1,0 +1,143 @@
+{
+  "result": {
+    "deviceId": "98c53f17408384ffd6329fd1",
+    "ownerId": "389e711791e70fe16c54ce166ad8f3eb",
+    "leftUserId": "389e711791e70fe16c54ce166ad8f3eb",
+    "leftHeatingLevel": -31,
+    "leftTargetHeatingLevel": 0,
+    "leftNowHeating": false,
+    "leftHeatingDuration": 0,
+    "leftSchedule": {
+      "daysUTC": {
+        "sunday": false,
+        "monday": false,
+        "tuesday": false,
+        "wednesday": false,
+        "thursday": false,
+        "friday": false,
+        "saturday": false
+      },
+      "enabled": false
+    },
+    "rightUserId": "e9e8a0c020a1159cc0549e189f6d4a15",
+    "rightHeatingLevel": -32,
+    "rightTargetHeatingLevel": 0,
+    "rightNowHeating": false,
+    "rightHeatingDuration": 0,
+    "rightSchedule": {
+      "daysUTC": {
+        "sunday": false,
+        "monday": false,
+        "tuesday": false,
+        "wednesday": false,
+        "thursday": false,
+        "friday": false,
+        "saturday": false
+      },
+      "enabled": false
+    },
+    "priming": false,
+    "lastLowWater": "2021-12-31T01:08:38.561Z",
+    "lastPrime": "2021-12-31T01:09:08.234Z",
+    "needsPriming": false,
+    "hasWater": true,
+    "ledBrightnessLevel": 40,
+    "sensorInfo": {
+      "label": "20600-0003-F00-0000C999",
+      "partNumber": "20600",
+      "sku": "0003",
+      "hwRevision": "F00",
+      "serialNumber": "0000C999",
+      "lastConnected": "2022-03-22T03:28:38.780Z",
+      "skuName": "caking",
+      "connected": true
+    },
+    "hubInfo": "20500-0001-B03-00009999",
+    "timezone": "America/New_York",
+    "location": [-53.15237, -69.40085],
+    "mattressInfo": {
+      "firstUsedDate": null,
+      "eightMattress": null,
+      "brand": null
+    },
+    "firmwareCommit": "d4ccf93",
+    "firmwareVersion": "2.4.2.0",
+    "firmwareUpdated": true,
+    "firmwareUpdating": false,
+    "lastFirmwareUpdateStart": "1970-01-01T00:00:00.000+00:00",
+    "lastHeard": "2022-03-22T03:28:57.717Z",
+    "online": true,
+    "encasementType": "pod-pro-cover",
+    "leftKelvin": {
+      "targetLevels": [-20, -18, -10],
+      "alarms": [],
+      "scheduleProfiles": [
+        {
+          "enabled": true,
+          "startLocalTime": "00:30:00",
+          "weekDays": {
+            "monday": false,
+            "tuesday": true,
+            "wednesday": true,
+            "thursday": true,
+            "friday": true,
+            "saturday": true,
+            "sunday": false
+          }
+        },
+        {
+          "enabled": true,
+          "startLocalTime": "02:30:00",
+          "weekDays": {
+            "monday": true,
+            "tuesday": false,
+            "wednesday": false,
+            "thursday": false,
+            "friday": false,
+            "saturday": false,
+            "sunday": true
+          }
+        }
+      ],
+      "phases": [],
+      "level": 0,
+      "currentTargetLevel": 0,
+      "active": false,
+      "currentActivity": "off"
+    },
+    "rightKelvin": {
+      "targetLevels": [30, 20, 0],
+      "alarms": [],
+      "scheduleProfiles": [
+        {
+          "enabled": false,
+          "startLocalTime": "23:30:00",
+          "weekDays": {
+            "monday": true,
+            "tuesday": true,
+            "wednesday": true,
+            "thursday": true,
+            "friday": true,
+            "saturday": true,
+            "sunday": true
+          }
+        }
+      ],
+      "phases": [],
+      "level": 0,
+      "currentTargetLevel": 0,
+      "active": false,
+      "currentActivity": "off"
+    },
+    "features": ["warming", "cooling", "vibration"],
+    "modelString": "Pod Pro",
+    "hubSerial": "00009999",
+    "wifiInfo": {
+      "signalStrength": -49,
+      "ssid": "MyWiFi",
+      "ipAddr": "192.168.0.185",
+      "macAddr": "4:7b:cb:0:b4:d8",
+      "asOf": "2022-03-22T03:28:59.929Z"
+    }
+  }
+}

@@ -22,7 +22,7 @@ _LOGGER = logging.getLogger(__name__)
 CLIENT_TIMEOUT = ClientTimeout(total=DEFAULT_TIMEOUT)
 
 
-class EightSleep(object):
+class EightSleep:
     """Eight sleep API object."""
 
     def __init__(self, email, password, tzone, client_session=None):
@@ -88,15 +88,15 @@ class EightSleep(object):
 
     def fetch_userid(self, side):
         """Return the userid for the specified bed side."""
-        for user in self.users:
-            obj = self.users[user]
+        for user, obj in self.users.items():
             if obj.side == side:
                 return user
+        return None
 
     async def update_user_data(self):
         """Update data for users."""
-        for user in self.users:
-            await self.users[user].update_user()
+        for obj in self.users.values():
+            await obj.update_user()
 
     async def start(self):
         """Start api initialization."""
@@ -110,9 +110,8 @@ class EightSleep(object):
             await self.fetch_device_list()
             await self.assign_users()
             return True
-        else:
-            # We couldn't authenticate
-            return False
+        # We couldn't authenticate
+        return False
 
     async def stop(self):
         """Stop api session."""
@@ -127,7 +126,7 @@ class EightSleep(object):
 
     async def fetch_token(self):
         """Fetch new session token from api."""
-        url = "{}/login".format(API_URL)
+        url = f"{API_URL}/login"
         payload = {"email": self._email, "password": self._password}
 
         reg = await self.api_post(url, None, payload, include_token=False)
@@ -141,7 +140,7 @@ class EightSleep(object):
 
     async def fetch_device_list(self):
         """Fetch list of devices."""
-        url = "{}/users/me".format(API_URL)
+        url = f"{API_URL}/users/me"
 
         dlist = await self.api_get(url)
         if dlist is None:
@@ -157,9 +156,7 @@ class EightSleep(object):
     async def assign_users(self):
         """Update device properties."""
         device = self._devices[0]
-        url = "{}/devices/{}?filter=ownerId,leftUserId,rightUserId".format(
-            API_URL, device
-        )
+        url = f"{API_URL}/devices/{device}?filter=ownerId,leftUserId,rightUserId"
 
         data = await self.api_get(url)
         if data is None:
@@ -190,8 +187,7 @@ class EightSleep(object):
         # Check which side is active, if both are return the average
         tmp = None
         tmp2 = None
-        for user in self.users:
-            obj = self.users[user]
+        for obj in self.users.values():
             if obj.current_values["processing"]:
                 if tmp is None:
                     tmp = obj.current_values["room_temp"]
@@ -205,8 +201,7 @@ class EightSleep(object):
 
         if tmp is not None:
             return tmp
-        elif tmp2 is not None:
-            return tmp2
+        return tmp2
 
     def handle_device_json(self, data):
         """Manage the device json list."""
@@ -215,7 +210,7 @@ class EightSleep(object):
 
     async def update_device_data(self):
         """Update device data json."""
-        url = "{}/devices/{}".format(API_URL, self.deviceid)
+        url = f"{API_URL}/devices/{self.deviceid}"
 
         # Check for access token expiration (every 15days)
         exp_delta = datetime.strptime(
@@ -232,8 +227,8 @@ class EightSleep(object):
         else:
             # Want to keep last 10 readings so purge the last after we add
             self.handle_device_json(device_resp["result"])
-            for user in self.users:
-                self.users[user].dynamic_presence()
+            for obj in self.users.values():
+                obj.dynamic_presence()
 
     async def api_post(self, url, params=None, data=None, include_token=True):
         """Make api post request."""
