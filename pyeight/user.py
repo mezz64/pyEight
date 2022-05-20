@@ -58,7 +58,7 @@ class EightUser:  # pylint: disable=too-many-public-methods
             return None
         return self.intervals[interval_num].get("score")
 
-    def _interval_timeseries(self, interval_num: int) -> Dict[str, Any]:
+    def _interval_timeseries(self, interval_num: int) -> Optional[Dict[str, Any]]:
         """Return timeseries interval if it exists."""
         if len(self.intervals) < interval_num + 1:
             return None
@@ -68,9 +68,10 @@ class EightUser:  # pylint: disable=too-many-public-methods
         self, key: str
     ) -> Optional[Union[float, int]]:
         """Get current property from intervals."""
-        if not self.intervals or not self._interval_timeseries(0).get(key):
+        timeseries_data = self._interval_timeseries(0)
+        if not timeseries_data or timeseries_data.get(key) is None:
             return None
-        return self._interval_timeseries(0)[key][-1][1]
+        return timeseries_data[key][-1][1]
 
     def _calculate_interval_data(
         self, interval_num: int, key: str, average_data: bool = True
@@ -89,7 +90,7 @@ class EightUser:  # pylint: disable=too-many-public-methods
             return total
         return total / len(data_list)
 
-    def _session_date(self, interval_num: int) -> Optional[str]:
+    def _session_date(self, interval_num: int) -> Optional[datetime]:
         """Get session date for given interval."""
         if (
             len(self.intervals) < interval_num + 1
@@ -170,12 +171,16 @@ class EightUser:  # pylint: disable=too-many-public-methods
     @property
     def now_heating(self) -> Optional[bool]:
         """Return current heating state."""
-        return self._now_heating_or_cooling(self.target_heating_level > 0)
+        return self._now_heating_or_cooling(
+            self.target_heating_level is not None and self.target_heating_level > 0
+        )
 
     @property
     def now_cooling(self) -> Optional[bool]:
         """Return current cooling state."""
-        return self._now_heating_or_cooling(self.target_heating_level < 0)
+        return self._now_heating_or_cooling(
+            self.target_heating_level is not None and self.target_heating_level < 0
+        )
 
     @property
     def heating_remaining(self) -> Optional[int]:
