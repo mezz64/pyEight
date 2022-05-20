@@ -36,11 +36,13 @@ class EightUser:  # pylint: disable=too-many-public-methods
         self.presence: bool = False
         self.observed_low: int = 0
 
-    def _get_trend(self, trend_num: int, keys: Tuple[str, ...]) -> Any:
+    def _get_trend(self, trend_num: int, keys: Union[str, Tuple[str, ...]]) -> Any:
         """Get trend value for specified key."""
-        if len(self.intervals) < trend_num + 1:
+        if len(self.trends) < trend_num + 1:
             return None
         data = self.trends[-(trend_num + 1)]
+        if isinstance(keys, str):
+            return data.get(keys)
         if self.trends:
             for key in keys[:-1]:
                 data = data.get(key, {})
@@ -282,7 +284,7 @@ class EightUser:  # pylint: disable=too-many-public-methods
     @property
     def current_fitness_session_date(self) -> Optional[str]:
         """Return date/time for start of last session data."""
-        return self._get_trend(0, ("day"))
+        return self._get_trend(0, "day")
 
     @property
     def current_sleep_breakdown(self) -> Optional[Dict[str, Any]]:
@@ -387,7 +389,7 @@ class EightUser:  # pylint: disable=too-many-public-methods
     @property
     def last_fitness_session_date(self) -> Optional[str]:
         """Return date/time for start of previous session data."""
-        return self._get_trend(1, ("day"))
+        return self._get_trend(1, "day")
 
     @property
     def last_sleep_breakdown(self) -> Optional[Dict[str, Any]]:
