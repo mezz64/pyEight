@@ -82,12 +82,12 @@ class EightUser:  # pylint: disable=too-many-public-methods
         data_list = timeseries.get(key)
         if not data_list:
             return None
-        sum = 0
+        total = 0
         for entry in data_list:
-            sum += entry[1]
+            total += entry[1]
         if not average_data:
-            return sum
-        return sum / len(data_list)
+            return total
+        return total / len(data_list)
 
     def _session_date(self, interval_num: int) -> Optional[str]:
         """Get session date for given interval."""
