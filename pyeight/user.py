@@ -628,12 +628,12 @@ class EightUser:  # pylint: disable=too-many-public-methods
 
         # Catch bad low inputs
         if self.device.is_pod:
-            level = -100 if level < -100 else level
+            level = max(-100, level)
         else:
-            level = 0 if level < 0 else level
+            level = max(0, level)
 
         # Catch bad high inputs
-        level = 100 if level > 100 else level
+        level = min(100, level)
 
         # Duration requests can fail when a schedule is active
         # so form two payloads to ensure level settings succeed
