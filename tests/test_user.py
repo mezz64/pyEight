@@ -3,7 +3,6 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from pyeight.eight import EightSleep
-from pyeight.user import EightUser
 
 
 async def test_update_user_data(client_session):
@@ -15,7 +14,7 @@ async def test_update_user_data(client_session):
     await eight.update_device_data()
     await eight.update_user_data()
 
-    user: EightUser = eight.users["e9e8a0c020a1159cc0549e189f6d4a15"]
+    user = eight.users["e9e8a0c020a1159cc0549e189f6d4a15"]
 
     assert user.bed_presence is False
     assert user.target_heating_level == 0
@@ -79,6 +78,12 @@ async def test_update_user_data(client_session):
     )
     assert user.last_session_processing is False
     assert user.last_sleep_score == 79
+    assert user.last_sleep_fitness_score == 100
+    assert user.last_sleep_duration_score == 100
+    assert user.last_latency_asleep_score == 100
+    assert user.last_latency_out_score == 100
+    assert user.last_wakeup_consistency_score == 99
+    assert user.last_fitness_session_date == "2022-03-21"
     assert user.last_sleep_breakdown == {
         "awake": 7020,
         "deep": 5100,
@@ -100,6 +105,14 @@ async def test_update_user_data(client_session):
         "room_temp": 20.88696886772881,
         "score": 79,
         "tnt": 10,
+    }
+    assert user.last_fitness_values == {
+        "date": "2022-03-21",
+        "asleep": 100,
+        "duration": 100,
+        "out": 100,
+        "score": 100,
+        "wakeup": 99,
     }
     assert user.trend_sleep_score("2022-03-22") == 53
     assert user.trend_sleep_score("2020-03-22") is None
@@ -130,7 +143,7 @@ async def test_update_user_data_missing_data(client_session_missing_data):
 
     assert user.bed_presence is False
     assert user.current_session_date is None
-    assert user.current_session_processing is False
+    assert user.current_session_processing is None
     assert user.current_sleep_stage is None
     assert user.current_sleep_score is None
     assert user.current_sleep_fitness_score is None
