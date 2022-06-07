@@ -153,13 +153,17 @@ class EightSleep:
         else:
             _LOGGER.debug("No-op because session is being managed outside of pyEight")
 
-    async def fetch_token(self) -> None:
+    async def fetch_token(
+        self, return_auth_data: bool = False
+    ) -> dict[str, str] | None:
         """Fetch new session token from api."""
         url = f"{API_URL}/login"
         payload = {"email": self._email, "password": self._password}
 
         reg = await self.api_request("post", url, data=payload, include_token=False)
         self._configure_auth(reg["session"])
+        if return_auth_data:
+            return reg["session"]
         _LOGGER.debug("UserID: %s, Token: %s", self._user_id, self.token)
 
     async def fetch_device_list(self) -> None:
