@@ -672,7 +672,7 @@ class EightUser:  # pylint: disable=too-many-public-methods
         """Update trends data json for specified time period."""
         url = f"{API_URL}/users/{self.user_id}/trends"
         params = {
-            "tz": self.device.tzone,
+            "tz": self.device.timezone,
             "from": start_date,
             "to": end_date,
             # 'include-main': 'true'

@@ -38,14 +38,15 @@ class EightSleep:
         self,
         email: str,
         password: str,
-        tzone: str,
+        timezone: str,
+        auth_data: dict[str, str] | None = None,
         client_session: ClientSession | None = None,
     ) -> None:
         """Initialize eight sleep class."""
         self._email = email
         self._password = password
 
-        self.tzone = tzone
+        self.timezone = timezone
 
         self.users: dict[str, EightUser] = {}
 
@@ -60,6 +61,10 @@ class EightSleep:
 
         self._api_session = client_session
         self._internal_session: bool = False
+
+        if auth_data is not None:
+            self._configure_auth(auth_data)
+
         # Stop on exit
         atexit.register(self.at_exit)
 
@@ -101,6 +106,14 @@ class EightSleep:
         """Return if device is a POD."""
         return self._is_pod
 
+    def _configure_auth(self, auth_data: dict[str, str]) -> None:
+        """Configure auth data."""
+        self._user_id = auth_data["userId"]
+        self._token = auth_data["token"]
+        self._token_expiration = datetime.strptime(
+            auth_data["expirationDate"], DATE_TIME_ISO_FORMAT
+        )
+
     def fetch_user_id(self, side: str) -> str | None:
         """Return the user_id for the specified bed side."""
         return next(
@@ -120,7 +133,8 @@ class EightSleep:
             self._api_session = ClientSession()
             self._internal_session = True
 
-        await self.fetch_token()
+        if not self._token:
+            await self.fetch_token()
         if self._token is not None:
             await self.fetch_device_list()
             await self.assign_users()
@@ -145,11 +159,7 @@ class EightSleep:
         payload = {"email": self._email, "password": self._password}
 
         reg = await self.api_request("post", url, data=payload, include_token=False)
-        self._user_id = reg["session"]["userId"]
-        self._token = reg["session"]["token"]
-        self._token_expiration = datetime.strptime(
-            reg["session"]["expirationDate"], DATE_TIME_ISO_FORMAT
-        )
+        self._configure_auth(reg["session"])
         _LOGGER.debug("UserID: %s, Token: %s", self._user_id, self.token)
 
     async def fetch_device_list(self) -> None:
@@ -231,7 +241,7 @@ class EightSleep:
         data: dict[str, Any] | None = None,
         include_token: bool = True,
     ) -> Any:
-        """Make api post request."""
+        """Make api request."""
         resp = None
         headers = DEFAULT_HEADERS.copy()
 
