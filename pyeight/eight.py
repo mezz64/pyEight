@@ -106,6 +106,14 @@ class EightSleep:
         """Return if device is a POD."""
         return self._is_pod
 
+    @property
+    def _new_token_needed(self) -> bool:
+        """Return if token needs to be refetcheed."""
+        return (
+            not self._token_expiration
+            or (self._token_expiration - datetime.now()).total_seconds() < 3600
+        )
+
     def _configure_auth(self, auth_data: dict[str, str]) -> None:
         """Configure auth data."""
         self._user_id = auth_data["userId"]
@@ -133,7 +141,7 @@ class EightSleep:
             self._api_session = ClientSession()
             self._internal_session = True
 
-        if not self._token:
+        if not self._token or self._new_token_needed:
             await self.fetch_token()
         if self._token is not None:
             await self.fetch_device_list()
@@ -221,10 +229,7 @@ class EightSleep:
         url = f"{API_URL}/devices/{self.device_id}"
 
         # Check for access token expiration (every 15days)
-        assert self._token_expiration
-        exp_delta = self._token_expiration - datetime.now()
-        # Renew 1hr before expiration
-        if exp_delta.total_seconds() < 3600:
+        if self._new_token_needed:
             _LOGGER.debug("Fetching new access token before expiration.")
             await self.fetch_token()
 
