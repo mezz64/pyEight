@@ -8,7 +8,7 @@ Licensed under the MIT license.
 
 MAJOR_VERSION = 0
 MINOR_VERSION = 3
-SUB_MINOR_VERSION = 0
+SUB_MINOR_VERSION = 1
 __version__ = f"{MAJOR_VERSION}.{MINOR_VERSION}.{SUB_MINOR_VERSION}"
 
 API_URL = "https://client-api.8slp.net/v1"
