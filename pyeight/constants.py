@@ -20,8 +20,9 @@ DATE_FORMAT = "%Y-%m-%d"
 DEFAULT_HEADERS = {
     "content-type": "application/json",
     "connection": "keep-alive",
-    "user-agent": "okhttp/4.9.1",
+    "user-agent": "okhttp/4.9.3",
     "accept-encoding": "gzip",
     "accept": "application/json",
-    "authority": "client-api.8slp.net",
+    ":authority": "client-api.8slp.net",
+    ":scheme": "https",
 }
