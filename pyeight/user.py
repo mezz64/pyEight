@@ -38,6 +38,8 @@ class EightUser:  # pylint: disable=too-many-public-methods
         self.presence: bool = False
         self.observed_low: int = 0
 
+        self._device_state: dict[str, Any] = {}
+
     def _get_trend(self, trend_num: int, keys: str | tuple[str, ...]) -> Any:
         """Get trend value for specified key."""
         if len(self.trends) < trend_num + 1:
@@ -146,6 +148,11 @@ class EightUser:  # pylint: disable=too-many-public-methods
         if level is not None and level < self.observed_low:
             self.observed_low = level
         return level
+
+    @property
+    def device_state(self) -> dict[str, Any]:
+        """Return state of device associated with user"""
+        return self._device_state
 
     def past_heating_level(self, num) -> int:
         """Return a heating level from the past."""
@@ -622,6 +629,22 @@ class EightUser:  # pylint: disable=too-many-public-methods
             start.strftime(DATE_FORMAT), end.strftime(DATE_FORMAT)
         )
 
+    async def set_device_state(self, state: bool, level: int = 0) -> None:
+        """Update device temperature"""
+        url = f"{API_URL}/users/{self.user_id}/temperature"
+
+        level = max(-100, level)
+        level = min(100, level)
+
+        data = {"currentLevel": level}
+        if state:
+            # If device is currently off, turn it on
+            data["currentState"] = {"type": "smart"}
+        else:
+            data["currentState"] = {"type": "off"}
+
+        self._device_state = await self.device.api_request("put", url, data=data)
+
     async def set_heating_level(self, level: int, duration: int = 0) -> None:
         """Update heating data json."""
         url = f"{API_URL}/devices/{self.device.device_id}"
@@ -686,3 +709,9 @@ class EightUser:  # pylint: disable=too-many-public-methods
 
         intervals = await self.device.api_request("get", url)
         self.intervals = intervals.get("intervals", [])
+
+    async def update_device_state(self) -> None:
+        """Update device state using 'temperature' endpoint"""
+        url = f"{API_URL}/users/{self.user_id}/temperature"
+
+        self._device_state = await self.device.api_request("get", url)
