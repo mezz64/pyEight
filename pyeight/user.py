@@ -622,42 +622,95 @@ class EightUser:  # pylint: disable=too-many-public-methods
             start.strftime(DATE_FORMAT), end.strftime(DATE_FORMAT)
         )
 
-    async def set_heating_level(self, level: int, duration: int = 0) -> None:
-        """Update heating data json."""
-        url = f"{API_URL}/devices/{self.device.device_id}"
+    async def set_temperature_smart_schedule(self, bed_time_level: int, initial_sleep_level: int, final_sleep_level: int) -> None:
 
-        # Catch bad low inputs
-        if self.device.is_pod:
-            level = max(-100, level)
-        else:
-            level = max(0, level)
+        if any(level < -100 or level > 100 for level in [bed_time_level, initial_sleep_level, final_sleep_level]):
+            raise ValueError("Heating levels must be between -100 and 100.")
+    
+        url = f"{API_URL}/users/{self.user_id}/temperature"
+        body = {
+            "settings": {
+                "scheduleType": "smart",
+                "smart": {
+                    "bedTimeLevel": bed_time_level,
+                    "initialSleepLevel": initial_sleep_level,
+                    "finalSleepLevel": final_sleep_level
+                }
+            }
+        }
 
-        # Catch bad high inputs
-        level = min(100, level)
+        # Assuming device.api_request is an existing method to make HTTP requests
+        response = await self.device.api_request("put", url, data=body)
 
-        # Duration requests can fail when a schedule is active
-        # so form two payloads to ensure level settings succeed
-        if self.side == "left":
-            data_duration = {"leftHeatingDuration": duration}
-            data_level = {"leftTargetHeatingLevel": level}
-        elif self.side == "right":
-            data_duration = {"rightHeatingDuration": duration}
-            data_level = {"rightTargetHeatingLevel": level}
 
-        # Send duration first otherwise the level request will do nothing
-        set_heat = await self.device.api_request("put", url, data=data_duration)
-        if set_heat is None:
-            _LOGGER.error("Unable to set eight heating duration.")
-        else:
-            # Standard device json is returned after setting
-            self.device.handle_device_json(set_heat["device"])
+    async def set_temperature(self, heating_level=None) -> None:
+        """Set the temperature as per given parameters."""
+        url = f"{API_URL}/users/{self.user_id}/temperature"
+        
+        data = {}
+        if heating_level and (heating_level < -100 or heating_level > 100):
+            raise ValueError("Heating level must be between -100 and 100.")
+    
+        data = {"currentLevel": heating_level}
+    
+        response = await self.device.api_request("put", url, data=data)
+        if response is None:
+            _LOGGER.error("Unable to set temperature.")
 
-        set_heat = await self.device.api_request("put", url, data=data_level)
-        if set_heat is None:
-            _LOGGER.error("Unable to set eight heating level.")
-        else:
-            # Standard device json is returned after setting
-            self.device.handle_device_json(set_heat["device"])
+    async def set_power_state(self, power=None) -> None:
+        """Set the temperature as per given parameters."""
+        url = f"{API_URL}/users/{self.user_id}/temperature"
+
+        if power and power not in ["off", "smart"]:
+            raise ValueError("Power must be 'off' or 'smart'.")
+        
+        data = {"currentState": {"type": power}}
+        response = await self.device.api_request("put", url, data=data)
+        if response is None:
+            _LOGGER.error("Unable to set temperature.")
+
+    async def change_side(self, side: str) -> None:
+        """Change side or take over the bed."""
+        url = f"https://client-api.8slp.net/v1/users/{self.user_id}"
+        if side not in ["right", "left", "solo"]:
+            raise ValueError("Side must be 'right', 'left', or 'solo'.")
+            
+        data = {
+            "currentDevice": {
+                "id": self.device.device_id,
+                "side": side
+            }
+        }
+    
+        response = await self.device.api_request("put", url, data=data)
+        if response is None:
+            _LOGGER.error(f"Unable to change side to {side}.")
+
+    async def start_away_mode(self) -> None:
+        """Start Away Mode."""
+        url = f"https://app-api.8slp.net/v1/users/{self.user_id}/away-mode"
+        data = {
+            "awayPeriod": {
+                "start": datetime.utcnow().isoformat() + "Z"
+            }
+        }
+    
+        response = await self.device.api_request("put", url, data=data)
+        if response is None:
+            _LOGGER.error("Unable to start Away Mode.")
+
+    async def end_away_mode(self) -> None:
+        """End Away Mode."""
+        url = f"https://app-api.8slp.net/v1/users/{self.user_id}/away-mode"
+        data = {
+            "awayPeriod": {
+                "end": datetime.utcnow().isoformat() + "Z"
+            }
+        }
+    
+        response = await self.device.api_request("put", url, data=data)
+        if response is None:
+            _LOGGER.error("Unable to end Away Mode.")
 
     async def update_user_profile(self) -> None:
         """Update user profile data."""
